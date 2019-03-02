@@ -1,4 +1,7 @@
-# Proposal for speaking at GopherCon 2019 
+---
+title: Clean Golang Code
+output: pdf
+---
 
 # Clean Golang Code
 
@@ -40,7 +43,7 @@ In the words of Robert C. Martin:
 When writing clean code, our primary goal is to make our code easily digestable. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not to avoid code duplication, the actual reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
 ```
-fn GetOrder:
+fn GetItem:
     - parse json input for order id
     - get user from context
     - check user has appropriate role
@@ -51,19 +54,19 @@ When using small functions (typically 5-8 lines in Golang), we can create a func
 
 ```go
 var (
-    NullOrder = Order{}
+    NullItem = Item{}
     ErrInsufficientPrivliges = errors.New("user does not have sufficient priviliges")
 )
 
-func GetOrder(ctx context.Context, json []bytes) (Order, error) {
-    order, err := NewOrderFromJSON(json)
+func GetItem(ctx context.Context, json []bytes) (Item, error) {
+    order, err := NewItemFromJSON(json)
     if err != nil {
-        return NullOrder, err
+        return NullItem, err
     }
     if GetUserFromContext(ctx).IsAdmin() {
-        return db.GetOrder(order.ID)
+        return db.GetItem(order.ID)
     }
-    return NullOrder, ErrInsufficientPrivliges
+    return NullItem, ErrInsufficientPrivliges
 }
 ```
 
@@ -162,6 +165,7 @@ func GetItemIfActive(extension string) (Item, error) {
 
 While we are on the topic. There are also a bunch of other side-effects that writing this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (but written by a sane person), than a function which is 400 lines. That's common sense. However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
 
+#### Variable Scope
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
 
 ```go
@@ -223,10 +227,198 @@ func main() {
 }
 ```
 
-Look at that, `val` never had to be mutated, nor did it have to have such a large scope. 
+Look at that, `val` never had to be mutated, nor did it have to have such a large scope. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger more complex systems, it can be impossible to figure out, why errors are happening. We don't want this to happen. Not only because we generally dislike errors happening in software, but it is also disrespectful to our colleagues, and ourselves, that we are potentially wasting each others live's, having to debug this type of code. So, let's make a promise that, even though we disagree with golang declaration method, which isn't always the clearest, let's make sure that we never have to worry about it.
+
+On a side not, if the `// do something else` part is another attempt to mutate the `val` variable. We should extract whatever logic in there as a function, as well as the previous part of it. This way, instead of prolonging the mutational scope of our variables, we can just return a new value:
+
+```go
+func getVal(num int) (string, error) {
+    val, err := getStringResult(32)
+    if err != nil {
+        return "", err
+    }
+    if val == "" {
+        return NewValue() // pretend function
+    }
+}
+
+func main() {
+    val, err := getVal(32)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(val)
+}
+```
 
 ### Clean Golang
-#### Let's talk about `interface{}`
+This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
+ 
+
+#### Returning Defined Errors
+We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returnign method will improve all three aspects, with very little effort.
+
+Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
+
+```go
+package smelly
+
+func (store *Store) GetItem(id string) (Item, error) {
+    store.mtx.Lock()
+    defer store.mtx.Unlock()
+
+    item, ok := store.items[id]
+    if !ok {
+        return Item{}, errors.New("item could not be found in the store") 
+    }
+    return item, nil
+}
+```
+
+There is as such, nothing inherently smelly about this function, in its isolation. We look into the `items` map of our `Store` struct, to see if we already have an item with this `id`. If we do, we return the item, if we don't, we return an error. Pretty standard. So, what is the issue with returning custom errors like this? Well, let's look at what happens, when we use this function, from another package:
+
+```go
+func GetItemHandler(w http.ReponseWriter, r http.Request) {
+    item, err := smelly.GetItem("123")
+    if err != nil {
+        if err.Error() == "item could not be found in the store" {
+            http.Error(w, err, http.StatusNotFound)
+	        return
+        }
+        http.Error(w, errr, http.StatusInternalServerError)
+        return
+    } 
+    json.NewEncoder(w).Encode(item)
+}
+```
+
+This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if we wish to change this error message to something else at another point, our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse, this could be a client using our package in their software, their software would inexplicably break all of a sudden after a package update. This is quite obviously somethign that we want to avoid. Fortunately, this fix is very simple. 
+
+```go
+package clean
+
+var (
+    NullItem = Item{}
+
+    ErrItemNotFound = errors.New("item could not be found in the store") 
+)
+
+func (store *Store) GetItem(id string) (Item, error) {
+    store.mtx.Lock()
+    defer store.mtx.Unlock()
+
+    item, ok := store.items[id]
+    if !ok {
+        return NullItem, ErrItemNotFound
+    }
+    return item, nil
+}
+```
+
+With this simple change of making the error into a variable `ErrItemNotFound`, we ensure that anyone using this package can check against the variable, rather than the actual string that it returns:
+
+```go
+func GetItemHandler(w http.ReponseWriter, r http.Request) {
+    item, err := clean.GetItem("123")
+    if err != nil {
+        if err == clean.ErrItemNotFound {
+            http.Error(w, err, http.StatusNotFound)
+	        return
+        }
+        http.Error(w, errr, http.StatusInternalServerError)
+        return
+    } 
+    json.NewEncoder(w).Encode(item)
+}
+```
+
+This feels much nicer and is also much safer. Some would even say that it's easier to read as well. In the case of a more verbose error message, it certainly would be preferable for a developer to simply read `ErrItemNotFound` rather than a novel on why a certain error has been returned.
+
+This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. Again, this is more foolproof for future development and thereby also makes the code more maintainable. There can be many different scenarios in which it might be preferable to return this defined object, rather than initialising it on return. As an example, we could find out that we want to introduce more safety, in case developers using our package forget to check for errors and invoke a function, which now attempts to access a nil pointer reference. If we were to return the value on return, this could end up in an annoying code refactor. Whereas with our defined `Null` value, we just have to change a single line:
+
+```go
+var NullItem = Item{ pointerObj: NewPointerObj() }
+```
+
+There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
+
+```go
+func (store *Store) GetItem(id string) (Item, error) {
+    store.mtx.Lock()
+    defer store.mtx.Unlock()
+
+    item, ok := store.items[id]
+    if !ok {
+        return NullItem, fmt.Errorf("Could not find item with ID: %s", id)
+    }
+    return item, nil
+}
+```
+
+So, what to do? There is no well defined / standard method for handling and returning these kind of dynamic errors. My personal preference, is to return a new interface, with a bit of added functionality:
+
+```go
+type ErrorDetails interface {
+    Error() string
+    Type() string
+}
+
+type errDetails struct {
+    errtype error
+    details string
+}
+
+func NewErrorDetails(err error, details ...interface{}) ErrorDetails {
+    return &errDetails{
+        errtype: err,
+        details: details,
+    }
+}
+
+func (err *errDetails) Error() string {
+    return fmt.Sprintf("%v: %v", err.details)
+}
+
+func (err *errDetails) Type() error {
+    return err.errtype
+}
+```
+
+This new data structure still works as our standard error struct. We can still compare it to `nil` since it's an interface implementation and we can still call `.Error()` on it, so it won't break any already existing implementations. However, the advantage is that we can now check our error type as we could previously, despite our error now containing the *dynamic* details:
+
+```go
+func (store *Store) GetItem(id string) (Item, error) {
+    store.mtx.Lock()
+    defer store.mtx.Unlock()
+
+    item, ok := store.items[id]
+    if !ok {
+        return NullItem, fmt.Errorf("Could not find item with ID: %s", id)
+    }
+    return item, nil
+}
+```
+
+And our http handler function can then be refactored to check for a specific error again:
+
+
+```go
+func GetItemHandler(w http.ReponseWriter, r http.Request) {
+    item, err := clean.GetItem("123")
+    if err != nil {
+        if err.Type() == clean.ErrItemNotFound {
+            http.Error(w, err, http.StatusNotFound)
+	        return
+        }
+        http.Error(w, err, http.StatusInternalServerError)
+        return
+    } 
+    json.NewEncoder(w).Encode(item)
+}
+```
+
+
+#### The empty `interface{}`
 Before starting with refactoring examples, this section will discuss an important topic within Clean Code, when writing Golang code: the use of `interface{}`. The empty interface struct in Golang is extremely powerful, but can also make it extremely easy to write unreadable and unstable code. The empty interface struct enables gophers to write weakly typed code, which can be extremely beneficial in certain cases. 
 
 As an example, the `json.Unmarshal` function, use of the empty interface struct, is fine. It's not great, but there aren't really any alternatives, without generics being implemented. 
