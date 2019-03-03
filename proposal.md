@@ -340,6 +340,7 @@ This approach is not limited to errors and can be used for other returned values
 var NullItem = Item{ pointerObj: NewPointerObj() }
 ```
 
+#### Returning Dynamic Errors
 There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
 
 ```go
@@ -418,31 +419,67 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 ```
 
 
-#### The empty `interface{}`
-Before starting with refactoring examples, this section will discuss an important topic within Clean Code, when writing Golang code: the use of `interface{}`. The empty interface struct in Golang is extremely powerful, but can also make it extremely easy to write unreadable and unstable code. The empty interface struct enables gophers to write weakly typed code, which can be extremely beneficial in certain cases. 
+#### Interfaces in Go
+In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented, if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an error. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. The general proverb for writing golang functions is: 
 
-As an example, the `json.Unmarshal` function, use of the empty interface struct, is fine. It's not great, but there aren't really any alternatives, without generics being implemented. 
+*"Be consdervative in what you do, be liberal in what you accept from others"*
 
-The general rule of using the empty interface struct, is to use it as an input type, but never to use it as an output type for a function. So whereas, this is maintanable:
-
-```go
-func Unmarshal(i interface{}) error { ... }
-```
-
-This isn't:
+In other words, you should write functions that accept an interface and return a concrete type. This is generally a good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that inteface.
 
 ```go
-func SmellyBoi() (interface{}, error) { ... }
+type Pipe struct {
+    writer io.Writer
+    buffer bytes.Buffer
+}
+
+func NewPipe(w io.Writer) *Pipe {
+    return &Pipe{
+        writer: w,
+    }
+}
+
+func (pipe *Pipe) Save() error {
+    if _, err := pipe.writer.Write(pipe.FlushBuffer()); err != nil {
+        return err
+    }
+    return nil
+}
 ```
 
-The main difference is, that when parsing an interface as input to a function, we know the type ahead of time. We won't have to do any type casting (other than inside the function). Our 'smell' is contained and won't have to affect the developer using this function, which is important.
-
-However, returning `interface{)` is a different story. Not only, is it extremely difficult to determine the actual output for other developers, but this forces developers to use type casting, which can cause many unexpected results and errors. We don't know the type ahead of time and the only real way to understand what might be returned, is by reading the implementation of the function. This should be avoided at all costs.
-
-Instead, a more reasonable way of resolving this, is by ensuring that we return an interface, which has some kind of contract associated with it.
+Let's assume that we are writing to a file when our application is running, but we don't want to write to a new file for all tests which invokes this function. Therefore, we can implement a new mock type, which will basically do nothing. Essentially, this is just basic dependency injection and mocking, but the point is that it is extremely easy to use in go:
 
 ```go
-func CleanerBoi() (*io.Reader, error) { ... }
+type NullWriter struct {}
+
+func (w *NullWriter) Write(b []byte) (int, error) {
+    return len(b), nil
+}
+
+func TestFn(t *testing.T) {
+    ...
+    pipe := NewPipe(NullWriter{})
+    ...
+}
 ```
 
-We know have something concrete to work with. We don't have to do type casting and we know how we can interact with the returning object.
+When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. This is great and as I mentioned, is a great advantage of go. However, this implementation of interfaces, also comes with a *huge* downside. 
+
+
+### The empty `interface{}`
+Unlike other languages, go does not have an implementation for generics. There have been many proposals on how to implement this and will eventually be implemented. However, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
+
+But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that golang determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
+
+```go
+type EmptyInterface interface {}
+```
+
+The above being equivalent to the built-in type `interface{}`. The result of this interface type is that **any** type is accepted. Meaning, that we can write functions in which any type is accepted. This is super useful for certain kind of functions, such as when creating a printer function. This is how it's possible to give any type to the `Println` function from the `fmt` package:
+
+```go
+func Println(v ...interface{}) {
+    ...
+}
+```
+
+In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which funnily enough, they 100% will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in golang to implement generic methods.  
