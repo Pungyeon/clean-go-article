@@ -13,7 +13,7 @@ The talk will introduce the ideas behind writing clean Golang code, as well as l
 
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * Test Driven Development
-    * Clean Functions & Writing Prose
+    * Cleaning Functions
 
 * [Clean Golang](#Refactoring-Code)
     * Let's talk about `interface{}`
@@ -85,7 +85,7 @@ func GetItemIfActive(extension string) (Item, error) {
             } // return no item found in cache by reference
         } // return cast error on reference 
     }
-    return EMPTY_ITEM, errors.New("reference not found in cache")
+    return EmptyItem, errors.New("reference not found in cache")
 }
 ```
 
@@ -97,7 +97,7 @@ So, how do we clean this? Well, it's actually quite simple. The first iteration,
 func GetItemIfActive(extension string) (Item, error) {
     refIface, ok := db.ReferenceCache.Get(extension)
     if !ok {
-        return EMPTY_ITEM, errors.New("reference not found in cache")
+        return EmptyItem, errors.New("reference not found in cache")
     }
 
     if ref, ok := refIface.(string); ok {
@@ -133,7 +133,7 @@ func GetItemIfActive(extension string) (Item, error) {
 func getItemByReference(extension string) (string, bool) {
     refIface, ok := db.ReferenceCache.Get(extension)
     if !ok {
-        return EMPTY_ITEM, false
+        return EmptyItem, false
     }
     return refIface.(string)
 }
@@ -141,14 +141,14 @@ func getItemByReference(extension string) (string, bool) {
 func getActiveItemByReference(reference string) (Item, ) {
     item, ok := getItemByReference(reference)
     if !item.Active || !ok {
-        return EMPTY_ITEM, false
+        return EmptyItem, false
     }
     return Item, nil
 }
 
 func getItemByReference(reference string) (Item, bool) {
     if itemIface, ok := db.ItemCache.Get(ref); ok {
-        return EMPTY_ITEM, false
+        return EmptyItem, false
     }
     return itemIface.(Item), true
 }
@@ -159,7 +159,7 @@ Now, this is many more lines of code than our first iteration. However, the code
 
 ```go
 func GetItemIfActive(extension string) (Item, error) {
-    if refIface,ok := db.ReferenceCache.Get(extension); ok {if ref,ok := refIface.(string); ok { if itemIface,ok := db.ItemCache.Get(ref); ok { if item,ok := itemIface.(Item); ok { if item.Active { return Item,nil }}}}} return EMPTY_ITEM, errors.New("reference not found in cache")
+    if refIface,ok := db.ReferenceCache.Get(extension); ok {if ref,ok := refIface.(string); ok { if itemIface,ok := db.ItemCache.Get(ref); ok { if item,ok := itemIface.(Item); ok { if item.Active { return Item,nil }}}}} return EmptyItem, errors.New("reference not found in cache")
 }
 ```
 
@@ -251,6 +251,9 @@ func main() {
 }
 ```
 
+#### Variable Scope - continued 
+// TODO: write some more stuff here
+
 ### Clean Golang
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
  
@@ -282,10 +285,10 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := smelly.GetItem("123")
     if err != nil {
         if err.Error() == "item could not be found in the store" {
-            http.Error(w, err, http.StatusNotFound)
+            http.Error(w, err.Error(), http.StatusNotFound)
 	        return
         }
-        http.Error(w, errr, http.StatusInternalServerError)
+        http.Error(w, errr.Error(), http.StatusInternalServerError)
         return
     } 
     json.NewEncoder(w).Encode(item)
@@ -322,10 +325,10 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := clean.GetItem("123")
     if err != nil {
         if err == clean.ErrItemNotFound {
-            http.Error(w, err, http.StatusNotFound)
+            <(w, err.Error(), http.StatusNotFound)
 	        return
         }
-        http.Error(w, errr, http.StatusInternalServerError)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     } 
     json.NewEncoder(w).Encode(item)
@@ -408,10 +411,10 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := clean.GetItem("123")
     if err != nil {
         if err.Type() == clean.ErrItemNotFound {
-            http.Error(w, err, http.StatusNotFound)
+            http.Error(w, err.Error(), http.StatusNotFound)
 	        return
         }
-        http.Error(w, err, http.StatusInternalServerError)
+        http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     } 
     json.NewEncoder(w).Encode(item)
@@ -482,4 +485,321 @@ func Println(v ...interface{}) {
 }
 ```
 
-In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which funnily enough, they 100% will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in golang to implement generic methods.  
+In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which funnily enough, they 100% will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in golang to implement generic methods. Good examples of this, come from the `json` standard library package:
+
+```go
+func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
+	var item Item
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := db.InsertItem(item); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatsOK)
+}
+```
+
+The reason why this is a good way of using the empty `interface{}`. We are containing all the *messy* code inside our `Decode()` function, so that the developer using this functionality won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, essentially, returning a concrete type. However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a `JSON` string that has nothing to do with our `Item` type, we still won't receive an error. Out `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+
+The problem with this, is that we are leaning towards using golang (a statically typed languagae) as a dynamically typed langauge. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
+
+```go
+type HashMap struct {
+    store map[string]interface{}
+}
+
+func (hashmap *HashMap) Insert(key string, value interface{}) {
+    hashmap.store[key] = value
+}
+
+func (hashmap *HashMap) Get(id string) (interface{}, error) {
+    value, ok := hashmap.store[key]
+    if !ok {
+        return nil, ErrKeyNotFoundInHashMap
+    }
+    return value
+}
+```
+
+> NOTE: I have omitted thread-safety from the example for simplicity
+
+Please keep in mind that the implementation pattern used above, is used in quite a lot of golang packages. It is even used in the standard library `sync` package, for the `sync.Map` type. So, what is the big problem with this implementation? Well, let's have a look at an example of using this package.
+
+```go
+func SomeFunction(id string) (Item, error) {
+    itemIface, err := hashmap.Get(id)
+    if err != nil {
+        return EmptyItem, err
+    }
+    item, ok := itemIface.(Item)
+    if !ok {
+        return EmptyItem, ErrCastingItem
+    }
+    return item, nil
+}
+```
+
+On first glance, this looks fine. However, like mentioned previously. What happens when the code base changes? As of right now, there is nothing limiting us from adding something other than the `Item` type. So what happens when someone starts adding other types into our HashMap? Our function now might return an error. This might even be a small change like someone else in the code base wanting to store a pointer `*Item` instead of an `Item`. Worst of all, this won't even be caught by our tests. We are simply checking that our function is working as expected and it does. The developer inserting the `*Item`, should of course add tests that will fail, but depending on the complexity of the system, might actually have a difficult time debugging why this test is failing. 
+
+This type of code, should never reach production. The matter of the fact is, that golang does not support generics as of now and as golang programmers, we should accept this. If we want to use generics, then we should use a different language which does support generics, rather than trying hack our way out of this. This is my biggest gripe with golang. A language that is otherwise quite good at forcing their idioms on their users, it baffles me that the use of `interface{}` is not more restricted. If anything, I feel that the return of an `interface{}` type should flag for a warning. I actually believe that it's that bad of a practice. If anything, it's much worse practice than using snake case instead of came case. 
+
+So, how do we prevent this code from reaching production? Well, let's borrow a principle from the Rust language. Generics are fully supported by Rust, which is actually quite strange, considering the language architecture. However, upon further insight, the way that Rust handles this, is very simple and very straight forward. Rust does not do runtime reflection, instead Rust does compiletime reflection. On compile, Rust will map out all the different possible variations of a generic function and compile a variant of this function, using concrete types rather than generic types. Referenced from: [this article](https://gist.github.com/Kimundi/8391398).
+
+So, in other words rust is generating our functions for us. If we stick to golang code, that would be the equivalent of having, the following code:
+
+```go
+func SomeFunction(value interface{}) interface{} { ... }
+
+func main() {
+    SomeFunction(42)
+    SomeFunction("hello there")
+}
+```
+
+Which would generate the following code: 
+
+```go
+func SomeFunction_Int(value int) int { ... }
+func SomeFunction_String(value string) string { ... }
+```
+
+Unfortunately, there is no way in golang to directly translate this. However, we can actually get very very close to producing something similar with go code generation. 
+
+#### Go Code Generation
+Let me start out by saying, that go code generation is nothing fancy. It really, really isn't. At it's most basic, it's simply just templatling (much like HandleBars.js in JavaScript and Jinja in Python). However, it works really well, especially when it comes to writing generic code, that we don't want to write over and over again. Keep in mind, that it doesn't solve all of our problems and there are definitely situations in which actual generic lanauge support would be preferred. However, it is still greatly preferred to using empty `interface{}` 
+
+The following shows some basic go code generation, which will be able to create very simple, but thread-safe, HashMap for primitive types. This is an example of how to do this, and should give enough inspiration as how to expand on the example and create more elaborate code generation templates.
+
+Our project has the following structure:
+
+```
+.
+|-- generate
+|   `-- hashmap.go
+|-- main.go
+```
+
+The `hashmap.go` file consists of a hashmap template and some logic, which will iterate over command line arguments to generate different types specified by the arguments. From the root of our project, we can run the following command:
+
+> go run generate/hashmap.go int64 string uint16
+
+This will generate files which implement a `HashMap` type for `int64` `string` and `uint16`. So the project now looks like the following:
+
+```
+.
+|-- generate
+|   `-- main.go
+|-- hashmap
+|   |-- hashmap_int64.go
+|   |-- hashmap_string.go
+|   `-- hashmap_uint16.go
+|-- main.go
+```
+
+> NOTE: The full code can be found in the index of this document
+
+We can now use these hashmap types in the rest of our codebase. These HashMaps are now no longer using `interface{}` but instead specifying concrete types for both input and output. As a short example, our get function now looks like this: 
+
+```go
+func (hashmap *HashMap_int64) get(key string) (int64, error) {
+	value, ok := hashmap.store[key]
+	if !ok {
+		return Emptyint64, Errint64NotFoundInHashMap
+	}
+	return value
+}
+```
+
+If we think about what was mentioned in the previous chapter, we can see why this is advantage for us. We are no longer having to do any type casting and we can be 100% sure that our functions are returning the correct concrete type. We can also be sure, that if breaking changes are introduced by changes the generated code, we will get compile time or test errors immediately. Not only does this make it easier to maintain our codebase, but it's also easier to understand the codebase and the effects of changing the codebase might have.
+
+Of course, this doesn't come without certain disadvantages. We add a comment a top of every generated file:
+
+> // Code generated by hashmap.go -Type int64 DO NOT EDIT.
+
+This line, will tell certain IDE's to show a warning, that the file is not to be edited. However, nothing is actually preventing users from editing these files. Typically though, code generation is used along with a build script tool (such as a Makefile), so that all generated files are re-generated on build. This will, hopefully, prevent any users from making unwanted changes to the generated code. Of course, this also means that there is no room for tweaking our generated code type by type, but I feel this to be more of an advantage, than anything.
+
+## Index
+
+### Generated Code
+#### generate/hashmap.go
+```go
+package main
+
+import (
+	"bytes"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+	"text/template"
+)
+
+type genValues struct {
+	Type string
+}
+
+func main() {
+	if err := clean(); err != nil {
+		panic(err)
+	}
+
+	if err := generate(os.Args[1:]); err != nil {
+		panic(err)
+	}
+}
+
+func clean() error {
+	if err := os.RemoveAll("hashmap"); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return os.Mkdir("hashmap", 0755)
+}
+
+func generate(args []string) error {
+	tmpl, err := template.New("hashmap").Parse(hashmap)
+	if err != nil {
+		return err
+	}
+	for _, arg := range args {
+		if err := generateHashMap(arg, tmpl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func generateHashMap(arg string, tmpl *template.Template) error {
+	buf := &bytes.Buffer{}
+	if err := tmpl.Execute(buf, genValues{Type: arg}); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(createFilename(arg), buf.Bytes(), 0755)
+}
+
+func createFilename(arg string) string {
+	return path.Join(
+		"hashmap",
+		"hashmap_"+strings.ToLower(arg)+".go",
+	)
+}
+
+var hashmap = `// Code generated by hashmap.go -Type {{.Type}} DO NOT EDIT.
+
+package hashmap
+
+import (
+	"errors"
+	"sync"
+)
+
+var (
+	Empty{{.Type}} = {{.Type}}
+
+	Err{{.Type}}NotFoundInHashMap = errors.New("{{.Type}} was not found in hash map")
+)
+
+type HashMap_{{.Type}} struct {
+	store map[string]{{.Type}}
+	mtx sync.RWMutex
+}
+
+func NewHashMap_{{.Type}}() *HashMap_{{.Type}} {
+	return &HashMap_{{.Type}}{
+		store: map[string]{{.Type}}{},
+	}
+}
+
+func (hashmap *HashMap_{{.Type}}) Get(key string) ({{.Type}}, error) {
+	hashmap.mtx.RLock()
+	defer hashmap.mtx.RUnlock()
+
+	return hashmap.get(key)
+}
+
+func (hashmap *HashMap_{{.Type}}) get(key string) ({{.Type}}, error) {
+	value, ok := hashmap.store[key]
+	if !ok {
+		return Empty{{.Type}}, Err{{.Type}}NotFoundInHashMap
+	}
+	return value
+}
+
+func (hashmap *HashMap_{{.Type}}) Insert(key string, value {{.Type}}) {
+	hashmap.mtx.Lock()
+	defer hashmap.mtx.Unlock()
+
+	hashmap.store[key] = value
+}
+
+func (hashmap *HashMap_{{.Type}}) Delet(key string) {
+	hashmap.mtx.Lock()
+	defer hashmap.mtx.Unlock()
+
+	delete(key, hashmap.store)
+}
+`
+```
+
+#### hashmap/hashmap_int64.go
+```go
+// Code generated by hashmap.go -Type int64 DO NOT EDIT.
+
+package hashmap
+
+import (
+	"errors"
+	"sync"
+)
+
+var (
+	Emptyint64 = int64
+
+	Errint64NotFoundInHashMap = errors.New("int64 was not found in hash map")
+)
+
+type HashMap_int64 struct {
+	store map[string]int64
+	mtx sync.RWMutex
+}
+
+func NewHashMap_int64() *HashMap_int64 {
+	return &HashMap_int64{
+		store: map[string]int64{},
+	}
+}
+
+func (hashmap *HashMap_int64) Get(key string) (int64, error) {
+	hashmap.mtx.RLock()
+	defer hashmap.mtx.RUnlock()
+
+	return hashmap.get(key)
+}
+
+func (hashmap *HashMap_int64) get(key string) (int64, error) {
+	value, ok := hashmap.store[key]
+	if !ok {
+		return Emptyint64, Errint64NotFoundInHashMap
+	}
+	return value
+}
+
+func (hashmap *HashMap_int64) Insert(key string, value int64) {
+	hashmap.mtx.Lock()
+	defer hashmap.mtx.Unlock()
+
+	hashmap.store[key] = value
+}
+
+func (hashmap *HashMap_int64) Delet(key string) {
+	hashmap.mtx.Lock()
+	defer hashmap.mtx.Unlock()
+
+	delete(key, hashmap.store)
+}
+```
