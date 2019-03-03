@@ -6,11 +6,11 @@ output: pdf
 # Clean Golang Code
 
 ## Abstract
-Learn how the core principles of writing clean code and how to refactor Golang, to produce a maintainable and stable code base.
+Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
-## Talk description
-The talk will introduce the ideas behind writing clean Golang code, as well as looking more specifically at refactoring already existing Golang code. The talk will be structured as such:
+The document will start with a simple and short introduction of the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
 
+## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * Test Driven Development
     * Cleaning Functions
@@ -21,7 +21,7 @@ The talk will introduce the ideas behind writing clean Golang code, as well as l
     * Refactor examples
 
 ### Introduction to Clean Code
-Clean Code, is the pragmatic concept of ensuring that code is readable, maintanable. Clean Code establishes trust in the codebase, and will derive developers from making silly mistakes or introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs as the codebase expands. 
+Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
 #### Test Driven Development
 The core of creating clean code stems from creating good tests. Writing good tests helps create clean code, as it invites developers to think about the outcomes and test coverage of functions / functionality. It's easier to test a function that is only 4 lines, rather than a function, which is 40. In the same manner, a function which is 4 lines, is typically easier to understand than a function of 40 lines. Therefore, when using test driven development, the resulting code is much more likely to be of a cleaner nature. 
