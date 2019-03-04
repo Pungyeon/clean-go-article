@@ -468,6 +468,8 @@ func TestFn(t *testing.T) {
 }
 ```
 
+> NOTE: there is actually already a null writer implementation built into the ioutil package named `Discard`
+
 When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. This is great and as I mentioned, is a great advantage of go. However, this implementation of interfaces, also comes with a *huge* downside. 
 
 
