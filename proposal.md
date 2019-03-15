@@ -19,6 +19,7 @@ The document will start with a simple and short introduction of the fundamentals
 * [Clean Golang](#Clean-Golang)
     * Returning Defined Errors
     * Returning Dynamic Errors
+    * Returning Other Values
     * Interfaces in Go
     * The empty `interface{}`
 * [Go Code Generation](#Go-Code-Generation)
@@ -169,7 +170,7 @@ func GetItemIfActive(extension string) (Item, error) {
 }
 ```
 
-While we are on the topic. There are also a bunch of other side-effects that writing this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (but written by a sane person), than a function which is 400 lines. That's common sense. However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
+While we are on the topic. There are also a bunch of other side-effects that writing this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (written by a sane person), than a function which is 400 lines. That's common sense. However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
 
 #### Variable Scope
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
@@ -425,6 +426,146 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
+#### Returning Other Values
+This section isn't going dive tremendously into the idea of returning values and how to ensure clean code in doing so. However, it's a topic will act as a nice lead-up to the next section of this article. As mentioned many times before, a big part of the *why* of writing clean code, is to ensure readability. Readability is obviously something that is somewhat subjective, however, despite this the following seems to be indisputable. In order to maximize readability, the code we write, should look similar, if the functionality is similar. This makes it easy to identify the functionality of functions and thereby enabling developers to read / skim code efficiently. 
+
+Take a look at the ending result from [Cleaning Functions](#Cleaning_Functions). These smaller functions all look and behave the same, in turn, making them very easily parseable. 
+
+```go
+func getItemByReference(extension string) (string, bool) {
+    refIface, ok := db.ReferenceCache.Get(extension)
+    if !ok {
+        return EmptyItem, false
+    }
+    return refIface.(string)
+}
+
+func getActiveItemByReference(reference string) (Item, bool) {
+    item, ok := getItemByReference(reference)
+    if !item.Active || !ok {
+        return EmptyItem, false
+    }
+    return item, true
+}
+```
+
+Now, let's change the code a little and throw a curve ball, for absolutely no reason:
+
+```go
+func getItemByReference(extension string) (string, bool) {
+    refIface, ok := db.ReferenceCache.Get(extension)
+    if !ok {
+        return EmptyItem, false
+    }
+    return refIface.(string)
+}
+
+func getActiveItemByReference(reference string) (item Item, ok bool) {
+    item, ok = getItemByReference(reference)
+    if !item.Active || !ok {
+        return
+    }
+    return
+}
+```
+
+We haven't changed the code logic, much. The only difference is that we are initialising the variables `item` and `ok`, in the function return signature. The `return` statement is now equivalent to:
+
+```go
+return item, ok
+```
+
+However, this is not apparent at first glance and the style of the code is not congruent with the rest of our functions / code. We are also making mutable variables, which will definitely open up for possible shadow variable issues further down the line. 
+
+The first time I saw that this was possible to do in golang, I really thought that this was a super neat little trick. However, now I am not particularly excited about the idea of returning values in this way. When returning values, we should make sure that the receiver of this value, is safe when receiving the value. As of now, we are returning a value of type `Item`. What does this default to? Presumably, it is an empty initialised value: `Item{}`. This is not too bad. However, if we are working with something less concrete, such as an `interface` or a `[]byte`, it is entirely possible that we end up returning `nil` or even worse, return a variable of some weird format.
+
+This is why, as you might have noticed, that in all the code examples, when an error has ocurred an `EmptyItem` has been returned. The essence of this, is to make clear that we are returning an empty variable together with our error. If we omit this, we can get unexpected behaviour, which might end up being very difficult to debug.
+
+The code above, actually presents us with this exact issue. In our original clean function, the if either of the boolean operators `!item.Active || !ok` were true, we would return a "ok = false" response. The invoker of the function could check that the result returned was bad / not ok and could then handle this. However, the dirty function doesn't actually mirror this behaviour. If `item.Active == true`, we are now actually returning "ok = true" and therefore, instead of returning an error-like value, we are returning a inactive item, which wasn't the intention of the function. 
+
+If you noticed that we introduced this bug. Well done! However, as before, please keep in mind that this is very simple code and on a larger scale, these kind of errors could be very difficult to catch. That being said, even on a smaller scale, these errors can be very difficult to catch. 
+
+It is my opinion, that you should avoid using this golang functionality. It's very rarely benificial. That being said, there are certain scenarios where it gives a slight benefit to the developer, it rarely justifies the introduced complexity this change brings with it. 
+
+A very common usage of this golang technique, is together with unmarshalling functions or database calls:
+
+```go
+func NewItemFromJSON() (item Item, err error) {
+    if err = json.Unmarshal(&item); err != nil {
+        return
+    }
+    return 
+}
+```
+
+This is of course, instead of using the following logic:
+
+```go
+func NewItemFromJSON() (Item, error) {
+    var item Item
+    if err = json.Unmarshal(&item); err != nil {
+        return EmptyItem, err
+    }
+    return item, nil
+}
+```
+
+The second version may seem 'uglier', but in fact, it is the clean version. The biggest problem with the first function, is that it is returning the item, which is being mutated by the `json.Unmarshal` function. If an error occurs, we have no idea what the state of this variable is. The fact that we are sending a mutated version of our variable back, could lead to some unexpected results. We want to stay as far away from introducing undefined behaviour as we possibly can and therefore the second option is much preferred.
+
+While on the topic, I would like to point out that the `json.Unmarshal` function is also bad practice. We will get back to this in more detail at another point. But for now, the most important point, is that we are mutating a pointer input and returning an error. This can also lead to some unexpected behaviour, as it doesn't necessarily force the user of the function, to think about the returned error. We will get back to why this is unavoidable in the case of an unmarshal function in golang, but let's have a quick look at why this should be avoided if possible.
+
+Consider the following code:
+
+```go
+func (store *Store) UpdateItem(item *Item) error {
+    storeItem, ok := store.items[item.ID] 
+    if !ok {
+        return NewErrorDetails(ErrItemNotFound, item.ID)
+    }
+    store.items[item.ID] = item.Merge(storeItem) // update non-null items
+    return nil
+}
+
+func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
+    item, err := NewItemFromHTTPRequest(r)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    store.UpdateItem(&item)
+    json.NewEncoder(w).Encode(item)
+}
+```
+
+In this case, we are both maintaining the `Store` and `Handler` functions, so therefore, we can very easily spot that there is something wrong here. We are not checking the error returned by `store.UpdateItem` in our handler function. This might lead to bugs, in which we return the updated item to our client, but haven't actually updated the item in the store. In this case, the bug will first be spotted upon trying to retrieve the item, which may happen at a much later time for the client, making this potentially very difficult to debug. The main reason, that this is a possibility, is because we are only returning an error an no value. To illustrate this, let's take a look at what would the code would look like, if we were to return a new variable instead.
+
+```go
+func (store *Store) UpdateItem(item Item) (Item, error) {
+    storeItem, ok := store.items[item.ID] 
+    if !ok {
+        return NewErrorDetails(ErrItemNotFound, item.ID)
+    }
+    return store.updateItem(item, storeItem)
+}
+
+func (store *Store) updateItem(item, storeItem Item) (Item, error) {
+    item.Merge(storeItem) // update non-null items
+    store.items[item.ID] = item
+    return item
+}
+
+func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
+    item, err := NewItemFromHTTPRequest(r)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    store.UpdateItem(item)
+    json.NewEncoder(w).Encode(item)
+}
+```
+> WARNING : This doesn't actually illustrate anything, shit.
+
 #### Interfaces in Go
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented, if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an error. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. The general proverb for writing golang functions is: 
 
@@ -635,13 +776,15 @@ Everything comes with a price. Much like you *can't please all of the people all
 Of course, if your main goal is to write top-performant applications. You're best bet, probably isn't golang. Golang is definitely a good choice within performance, but we shouldn't kid ourselves into believing that it can compete with the likes of C/C++ (or even Rust). That being said, it doesn't mean that we should all thoughts on creating performant code out of the window. This section will look at some concepts of ensuring clean code, while still ensuring a minimum loss of performance.
 
 #### Immutability - (Variable Scope Continued)
-Previously, we spoke about variable scope and how we should try to keep our variables immutable, as best possible. This is to avoid managing state, which is an immensely difficult part of programming and also to avoid confusion, when reading code. If state is changed in the flow of code, it can become extremely difficult to read and remember the current value of that state, making the code harder to debug. This becomes an even bigger problem when we start introducing concurrency into the picture. Functional programming languages pride themselves on being 100% concurrency safe, and rightly so! In functional programming all variables are immutable (at least to a certain extent). With this in mind, we can now guarantee that our code will never suffer from a race condition, as we will never mutate memory. That's neat!
+Previously, we spoke about variable scope and how we should try to keep our variables immutable, as best possible. This is to avoid managing state, which is an immensely difficult part of programming and also to avoid confusion, when reading code. If state is changed in the flow of code, it can become extremely difficult to read and remember the current value of that state, making the code harder to debug. This becomes an even bigger problem when we start introducing concurrency into the picture. Functional programming languages pride themselves on being 100% concurrency safe, and rightly so! In functional programming all variables are immutable (at least to a certain extent). With this in mind, we can now guarantee that our code will never suffer from a race condition, as we will never mutate already allocated memory. That's neat!
 
 Now, while rather controversial to mention in the golang language community. Golang, performance-wise, really benefits from borrowing a functional style. The performance bottleneck for golang, is the garbage collector. In most cases, this is why C/C++ and Rust outperform golang. Solving certain problems, however, where the computation is very reliant on fast memory allocation, golang performs ***horribly***. As an example of this (from: [The Computer Language Benchamrks Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/performance/binarytrees.html)), Rust is almost 8 times faster than go at creating binary trees. Even more insulting, there are Nodejs implementations that are faster than the fastest golang implementation. 
 
-It's really weird. But let's not think about it too much right now, because honestly, there is not much we *can* do about it. Instead, let's just agree that it's extremely unlikely that you will need to create binary trees performant in your day-to-day, so everything is probably going to be fine. The more important lesson we can learn from this, is that heap allocations should be avoided in golang code, if we want to keep it performant... and wow, what a coincidence... because this leads me to immutability and performance.
+The first time I heard about this, I actually became very confused and honsetly was a little set back by the fact that Nodejs was outperforming golang. Let's not think about this too much right now, because honestly, there is not much we *can* do about it. Instead, let's just agree that it's extremely unlikely that you will need to create performant binary trees in your day-to-day, so everything is probably going to be fine. The more important lesson we can learn from this, is that heap allocations should be avoided in golang code, if we want to keep it performant.
 
-Let's take a look at a simple "FizzBuzz" implementation:
+> WARNING - NOTE: I need to explain this in a much better way.
+
+So, how do we avoid making heap allocations? How do we help the garbage collector as much as possible? While there are many different techniques of doing so, the easiest way to do this, is by writing immutable code. Let's take a look at a simple "FizzBuzz" implementation:
 
 ```go
 func devnull(v ...interface{}) {
@@ -669,6 +812,16 @@ func BenchmarkMutable(b *testing.B) {
 	}
 }
 ```
+
+This is a very simple implementation of the FizzBuzz exercise. On every benchmark iteration, we are checking if the checking number is divisible by 3 or 5. If it's divisible by 3, we will add "Fizz" to our buffer and if divisible by 5, we will add "Buzz" to the buffer. Of course, if both are true, we will end with a "FizzBuzz" and if none are true, we will just return the number itself as a string. 
+
+This isn't necessarily a bad solution. It's simple and it does the job. The benchmark score is also fine:
+
+```
+BenchmarkMutable-4   	30000000	        38.4 ns/op	      14 B/op	       1 allocs/op
+```
+
+
 
 Hey look it's a buffer implementation, and it get's worse, becasue the buf is a "global" variable, oh no! If we put the buf inside the for loop though, performance is absolutely terrible. Oh no ! What should we do? The allocation is tearing me apart, Lisa.
 
