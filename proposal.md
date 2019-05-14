@@ -608,6 +608,8 @@ func NewItemFromJSON() (Item, error) {
 
 The second version may seem 'uglier', but in fact, it is the clean version. The biggest problem with the first function, is that it is returning the item, which is being mutated by the `json.Unmarshal` function. If an error occurs, we have no idea what the state of this variable is. The fact that we are sending a mutated version of our variable back, could lead to some unexpected results. We want to stay as far away from introducing undefined behaviour as we possibly can and therefore the second option is much preferred.
 
+** PROBABLY JUST DELETE THIS ENTIRE SECTION :'( ** 
+
 While on the topic, I would like to point out that the `json.Unmarshal` function is also bad practice. We will get back to this in more detail at another point. But for now, the most important point, is that we are mutating a pointer input and returning an error. This can also lead to some unexpected behaviour, as it doesn't necessarily force the user of the function, to think about the returned error. We will get back to why this is unavoidable in the case of an unmarshal function in golang, but let's have a quick look at why this should be avoided if possible.
 
 Consider the following code:
@@ -662,7 +664,53 @@ func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
 ```
 > WARNING : This doesn't actually illustrate anything, shit.
 
-#### Interfaces in Go
+### Nil Values 
+A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. A lot of other languages have omitted this from their language, prioritising safety and therefore the equivalent of `nil` is in fact a type, rather than an actual null pointer. The reason for this, is that null pointers can cause a lot of trouble. We explained which troubles they can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to some up: Things break, when you try to access null pointers. 
+
+Luckily, there is an easy way to combat this. One method of doing this, is by hiding our concrete struct behind an interface. The concrete type can only be initialised via. functions, which ensure that all possible `nil` values are initialised and we hereby ensure that these values will never be accessed.
+
+```go
+type Cache interface {
+    Add(string, string) error
+}
+
+type kvCache struct {
+    cache map[string]string
+}
+
+func (c *kvCache) Add(key, value string) error {
+    ...
+}
+
+func NewKVCache() Cache {
+    return &kvCache{
+        cache map[string]string{},
+    }
+}
+```
+
+The above code works and fixes the immediate issue, ensuring that the `map` in our key value cache, is initialised with our constructor. Since it's a private struct, then there is no way of initialising it directly outside of our package and we can therefore conclude, that the `cache` map property, will never be accessed as a null poitner. However, using this can be quite tedious, as we will have to create both interface and struct methods for every single property that we wish to access. Don't get me wrong, this is a completely legitimate way of writing code, but in some cases, I don't think that it is the most suitable / straightforward solution to solve this issue. 
+
+Instead, we can turn our `KVCache` into a public struct, making it fully accessible outside of package. Instead of hiding the properties behind an interface, we can make the properties which default to `nil` private and create methods for accessing them. These methods can then ensure that these values are not `nil` before returning them.
+
+```go
+type KVCache struct {
+    cache map[string]string
+}
+
+func (c *KVCache) Cache() map[string]string {
+	if c.cache == nil {
+		c.cache = map[string]string{}
+	}
+	return c.cache
+}
+```
+
+This way, we have still fixed the issue that we started out with, but we are now free to add other non-nil default valued properties to our struct and make them publically accessible. This is nice and saves us the trouble of having to implement a bloated interface, for accessing our various properties. We aren't writing Java, so we want to avoid looking like we enjoy writing getters and setters.
+
+This method works for all values default to `nil`: slices, interfaces, maps, channels etc. and is a good way of prioritising safety, without annoying the users of our package, by denying them access to the different properties of our structures.
+
+### Interfaces in Go
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
 
 There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
