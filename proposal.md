@@ -12,16 +12,18 @@ The document will start with a simple and short introduction of the fundamentals
 
 ## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
-    * Test Driven Development
-    * Cleaning Functions
-    * Variable Scope
+    * [Test Driven Development](#Test-Driven-Development)
+    * [Function Naming](#Function-Naming)
+    * [Variable Naming](#Variable-Naming)
+    * [Cleaning Functions](#Cleaning-Functions)
+    * [Variable Scope](#Variable-Scope)
 
 * [Clean Golang](#Clean-Golang)
-    * Returning Defined Errors
-    * Returning Dynamic Errors
-    * Returning Other Values
-    * Interfaces in Go
-    * The empty `interface{}`
+    * [Returning Defined Errors](#Returning-Defined-Errors)
+    * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
+    * [Returning Other Values](#Returning-Other-Values)
+    * [Interfaces in Go](#Interfaces-in-Go)
+    * [The empty `interface{}`](#The-empty-`interface{}`)
 * [Go Code Generation](#Go-Code-Generation)
 * [Balancing Performance with Cleanliness](#Balancing-Performance-with-Cleanliness)
     * Immutability - Variable Scope Continue 
@@ -41,6 +43,94 @@ The next important part of test driven development, which is very closely relate
 4. Repeat
 
 Step three of the cycle, ensures that we can refactor our code as we are writing it. The tests ensure that our refactor doesn't change the outcome of our functions and we can therefore, essentially, go crazy refactoring our code to be as clean as possible. As we go along, and our codebase expands, we will still have our tests, to make sure that our refactoring will not affect the outcome of our functions.
+
+#### Function Naming
+Before we do anything that is going to change the logic of our code. We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+
+```go
+func main() {
+    configpath := flag.String("config-path", "", "configuration file path")
+    flag.Parse()
+
+    config, err := configuration.Parse(*configpath)
+    
+    ...
+}
+```
+
+Our focus being on the naming of the `Parse` function. Despite this function name being very short and general, it's actually quite clear what this function attempts to achieve. Still following the same naming function, when we go one layer deeper, our function naming will become slightly more specific:
+
+```go
+func Parse(filepath string) (Config, error) {
+    switch getFileExtension(filepath) {
+    case "json":
+        return parseJSON(filepath)
+    case "yaml":
+        return parseYAML(filepath)
+    case "toml":
+        return parseTOML(filepath)
+    default:
+        return Config{}, ErrUnknownFileExtension
+    }
+}
+```
+
+Now that we have gone a layer deeper into our functions, our naming is now slightly more specific. Not much, but appropriately. It's still clear what the difference is between the parent function and the sub-functions, without being overly specific. Notice that `getFileExtension` is actually a little more specific. However, this is because the functionality of this function is, in fact, quite specific:
+
+```go
+func getFileExtension(filepath string) string {
+    segemnts := strings.Split(filepath, ".")
+    return segments[len(segments)-1]
+}
+```
+
+This kind of logical progression in our function names, makes the code easier to follow and will make the code much easier to read. When we think about the opposite approach to function naming, it becomes even more clear why. If our highest level of abstraction becomes too specific, we will end up with a function name such as `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read and just adds confusion, more than anything else. We are trying to be too specific too quickly and therefore we end up being confusing, despite our intention of trying to be clear. 
+
+#### Variable Naming
+Rather interestingly, the opposite is true for variables. Unlike functions, our variable naming should progress from more to less specific. 
+
+<center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
+
+The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. Because the context of the variable is so clear, it is unecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. Keep in mind that this is not considered clean code, this illustrates quite perfectly, the idea of variable naming becoming less and less specific:
+
+
+```go
+func PrintBrandsInList(brands []BeerBrand) {
+    for _, b := range brands { 
+        fmt.Println(b)
+    }
+}
+```
+
+The reason why this is true, is because of the scope of the variable, rather than the abstraction layer, which is the guideline we would use for our function naming. The smaller the scope of a variable, the less important the actual naming is. In the above example, the `b` variable scope is so short, that we don't need to spend brain power on remembering what it represents. However, because the scope `brands` is slightly larger, when reading the code, we will use more brain power on remembering what these represent. When expanding the variable scope in the function below, it becomes even more apparent:
+
+```go
+func BeerBrandListToBeerList(beerBrands []BeerBrand) []Beer {
+    var beerList []Beer
+    for _, brand := range beerBrandList {
+        for _, beer := range brand {
+            beerList = append(beerList, beer)
+        }
+    }
+    return beerList
+}
+```
+
+Now, let's imagine that we apply the opposite logic, to see what this looks like:
+
+```go
+func BeerBrandListToBeerList(b []BeerBrand) []Beer {
+    var bl []Beer
+    for _, beerBrand := range b {
+        for _, beerBrandBeerName := range beerBrand {
+            bl = append(bl, beerBrandBeerName)
+        }
+    }
+    return bl
+}
+```
+
+Even though the function might still be readable, due to it's brevity, there is a strange off-putting feeling, when reading through the function. Should the scope of the variables or the logic of the function expand, this off-putting feel, becomes even worse and could potentially spiral into complete confusion. However, while on the topic of functions and their brevity, let's dive into the next topic of writing clean code.
 
 #### Cleaning Functions
 In the words of Robert C. Martin: 
@@ -256,15 +346,14 @@ func main() {
     }
     fmt.Println(val)
 }
-```
-
+``` 
 
 ### Clean Golang
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
  
 
 #### Returning Defined Errors
-We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returnign method will improve all three aspects, with very little effort.
+We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
 
@@ -283,7 +372,7 @@ func (store *Store) GetItem(id string) (Item, error) {
 }
 ```
 
-There is as such, nothing inherently smelly about this function, in its isolation. We look into the `items` map of our `Store` struct, to see if we already have an item with this `id`. If we do, we return the item, if we don't, we return an error. Pretty standard. So, what is the issue with returning custom errors like this? Well, let's look at what happens, when we use this function, from another package:
+There is nothing inherently smelly about this function, in its isolation. We look into the `items` map of our `Store` struct, to see if we already have an item with this `id`. If we do, we return the item, if we don't, we return an error. Pretty standard. So, what is the issue with returning custom errors like this? Well, let's look at what happens, when we use this function, from another package:
 
 ```go
 func GetItemHandler(w http.ReponseWriter, r http.Request) {
@@ -300,7 +389,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if we wish to change this error message to something else at another point, our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse, this could be a client using our package in their software, their software would inexplicably break all of a sudden after a package update. This is quite obviously somethign that we want to avoid. Fortunately, this fix is very simple. 
+This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if we wish to change this error message to something else at another point, our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse would be, if a client used our package to write this code. Their software would inexplicably break all of a sudden after a package update, should we choose to change the message of the returnign error. This is quite obviously something that we want to avoid. Fortunately, this fix is very simple. 
 
 ```go
 package clean
@@ -342,11 +431,18 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 
 This feels much nicer and is also much safer. Some would even say that it's easier to read as well. In the case of a more verbose error message, it certainly would be preferable for a developer to simply read `ErrItemNotFound` rather than a novel on why a certain error has been returned.
 
-This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. Again, this is more foolproof for future development and thereby also makes the code more maintainable. There can be many different scenarios in which it might be preferable to return this defined object, rather than initialising it on return. As an example, we could find out that we want to introduce more safety, in case developers using our package forget to check for errors and invoke a function, which now attempts to access a nil pointer reference. If we were to return the value on return, this could end up in an annoying code refactor. Whereas with our defined `Null` value, we just have to change a single line:
+This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. Again, this is more foolproof for future development and thereby also makes the code more maintainable. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
+
+EXPLAIN THIS BETTER MAING
+Returning default `Null` values like the previous examples, can also be more safe, in certain caes. As an example, a user of our package could forget to check for errors and end up initialising an empty struct containing a default value of `nil`. When attempting to access this `nil` value later in the code, this could cause a panic in thier code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value appraoch, we now only have to change our code in a single place:
 
 ```go
-var NullItem = Item{ pointerObj: NewPointerObj() }
+var NullItem = Item{
+    itemMap: map[string]Item{},
+}
 ```
+
+> NOTE: Every interface property in golang, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
 
 #### Returning Dynamic Errors
 There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
@@ -567,11 +663,137 @@ func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
 > WARNING : This doesn't actually illustrate anything, shit.
 
 #### Interfaces in Go
-In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented, if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an error. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. The general proverb for writing golang functions is: 
+In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
 
-*"Be consdervative in what you do, be liberal in what you accept from others"*
+There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
 
-In other words, you should write functions that accept an interface and return a concrete type. This is generally a good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that inteface.
+```go
+// package io 
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type NullWriter struct {}
+
+func (writer *NullWriter) Write(data []byte) (n int, err error) {
+    // do nothing
+    return len(data), nil
+}
+
+func NewNullWriter() io.Writer {
+    return &NullWriter{}
+}
+```
+
+The above function ensures, that the `NullWriter` struct implements the `Writer` interface. If we were to delete the `Write` method for the `NullWriter` we would get a compile error, where we to try and build the solution. This is a good way of ensuring our code behaves in the way that we expect and we can use the compiler as a safety net to ensure that we aren't producing invalid code. 
+
+There is another way of trying to be more explicit about which interfaces a given struct implements. However, this method is, achieves the opposite of what we wish to achieve. The method being, using embedded interfaces, as a struct property.
+
+<center style="font-style: italic">"Wait what?" - Presumably most people</center>
+
+So, let's rewind a little, before we dive deep into the forbidden forest of smelly Go. In Go, we can use embedded structs, as a type of inheritance in our struct definitions. This is really nice as we can decouple our code, by defining reusable structs.
+
+```go
+type Metadata struct {
+    CreatedBy types.User
+}
+
+type Document struct {
+    *Metadata
+    Title string
+    Body string
+}
+
+type AudioFile struct {
+    *Metadata
+    Title string
+    Body string
+}
+```
+
+Above, we are defining a `Metadata` object, which will provide us with property fields that we are likely to use on many different types. This is great and by all means great for improving our code cleanliness. This is mainly, because we can use this, decouple our code and thereby update our Metadata object, without breaking other parts of our code. An example of this, let's create some constructors: 
+
+```go
+func NewMetadata(user types.User) Metadata {
+    return &Metadata{
+        CreatedBy: user,
+    }
+}
+
+func NewDocument(title string, body string) Document {
+    return Document{
+        Metadata: NewMetadata(),
+        Title: title,
+        Body: body,
+    }
+}
+```
+
+At a later point in time, we find out, that we would also like a `CreatedAt` field on our `Metadata` object. This is now easily achieveable, by simply updating our `NewMetadata` constructor:
+
+```go
+func NewMetadata(user types.User) Metadata {
+    return &Metadata{
+        CreatedBy: user,
+        CreatedAt: time.Now(),
+    }
+}
+```
+
+Now, both our `Document` and `AudioFile` structures are updated, to also populate these fields on construction. This is the core principle behind decoupling and an excellent example of ensuring maintanability of code. We can also add new methods, without breaking our code:
+
+```go
+type Metadata struct {
+    CreatedBy types.User
+    CreatedAt time.Time
+    UpdatedBy types.User
+    UpdatedAt time.Time
+}
+
+func (metadata *Metadata) AddUpdateInfo(user types.User) {
+    metadata.UpdatedBy = user
+    metadata.UpdatedAt = time.Now()
+}
+```
+
+Again, without breaking the rest of our code base, we are implementing new functionality to our already existing structures. This kind of programming, makes implementing new features very quick and very painless, which is exactly what we are trying to achieve by making our code clean. 
+
+Now, I am sorry to break this streak of happiness, because now we return to the smelly forbidden forest of Go. Let's get back to our interfaces and how to show explicitly which interfaces are being implemented by a structure. Instead of embedding a struct, we can embed an interface:
+
+```go
+type NullWriter struct {
+    Writer
+}
+
+func NewNullWriter() io.Writer {
+    return &NullWriter{}
+}
+```
+The above code compiles. This is bad. Technically, we are implemnting the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
+
+```go
+func main() {
+    w := NewNullWriter()
+
+    w.Write([]byte{1, 2, 3})
+}
+```
+
+As mentioned before, the above code will compile. The `NewNullWriter` returns a `Writer` and everything is honky-dori, according to the compiler, because `NullWriter` fulfills the contract of `io.Writer`, via. the embedded interface. However, running the code above will result in the following:
+
+> panic: runtime error: invalid memory address or nil pointer dereference
+
+The explanation being, that an interface method in Go, is essentially a function pointer. In this case, since we are pointing the function of an interface, rather than an actual method implementation, we are trying to invoke a function, which is in actuality a nil pointer. Oops! Personally, I think that this is a massive oversight in the Go compiler. This code **should not** compile... but while this is being fixed (if it ever will be), let's just promise each other, never to implement code in this way. In an attempt to be more clear with our implementation, we have ended up shooting ourselves in the foot and bypassing compiler checks. 
+
+> NOTE: Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. In my opinion, this is just laziness combined with congnitive dissonance. 
+
+Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
+
+<center style="font-style: italic">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
+
+> NOTE: This proverb is actually taken from an early specification of the TCP networking protocol.
+
+In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that inteface.
 
 ```go
 type Pipe struct {
@@ -583,7 +805,7 @@ func NewPipe(w io.Writer) *Pipe {
     return &Pipe{
         writer: w,
     }
-}
+} 
 
 func (pipe *Pipe) Save() error {
     if _, err := pipe.writer.Write(pipe.FlushBuffer()); err != nil {
@@ -598,8 +820,8 @@ Let's assume that we are writing to a file when our application is running, but 
 ```go
 type NullWriter struct {}
 
-func (w *NullWriter) Write(b []byte) (int, error) {
-    return len(b), nil
+func (w *NullWriter) Write(data []byte) (int, error) {
+    return len(data), nil
 }
 
 func TestFn(t *testing.T) {
@@ -612,7 +834,6 @@ func TestFn(t *testing.T) {
 > NOTE: there is actually already a null writer implementation built into the ioutil package named `Discard`
 
 When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. This is great and as I mentioned, is a great advantage of go. However, this implementation of interfaces, also comes with a *huge* downside. 
-
 
 ### The empty `interface{}`
 Unlike other languages, go does not have an implementation for generics. There have been many proposals on how to implement this and will eventually be implemented. However, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
