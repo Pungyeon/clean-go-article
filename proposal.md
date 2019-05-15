@@ -1,6 +1,11 @@
 ---
 title: Clean Golang Code
 output: pdf
+
+todo:
+    - write section on closures
+    - write section on channel declaration
+    - specify pointer input / return handling
 ---
 
 # Clean Golang Code
@@ -709,6 +714,53 @@ func (c *KVCache) Cache() map[string]string {
 This way, we have still fixed the issue that we started out with, but we are now free to add other non-nil default valued properties to our struct and make them publically accessible. This is nice and saves us the trouble of having to implement a bloated interface, for accessing our various properties. We aren't writing Java, so we want to avoid looking like we enjoy writing getters and setters.
 
 This method works for all values default to `nil`: slices, interfaces, maps, channels etc. and is a good way of prioritising safety, without annoying the users of our package, by denying them access to the different properties of our structures.
+
+### Pointers in Go
+Pointers in go are rather a large topic. They are a very big part of working with the language, so much so, that it is essentially impossible to write go, without some knowledge of pointers and their workings in go. Pointers in themselves are a large topic, so I will refrain from explaining them in detail, but rather just explain their quirks and how to handle these quirks in go.
+
+Pointers add complexity, however, as mentioned, it's almost impossible to avoid them when writing go. Therefore, it is important to understand how to use pointers, without adding unecessary complexity and thereby keeping your codebase clean. Without restraining oneself, the incorrect use of pointers can introduce nasty side-effects, introducing bugs that are particularly difficult to debug. Of course, when sticking the basic principles in the first part of this article, we limit our exposure of introducing this complexity, but pointers are a particular case, which can still undo all of our previous hard work to make our code clean. 
+
+#### Pointer Mutability
+I have already used the word mutability more than once in this article, as a negative. I will keep doing this, in hope that it become indoctrinating in your mind. Mutability is obviously not a clear-cut bad thing and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool, but we should really only ever use it, when it's necessary. Let's have a look at a code example illustrating why:
+
+```go
+func (store *UserStore) Insert(user *User) error {
+    if store.userExists(user.ID) {
+        return ErrItemAlreaydExists
+    }
+    store.users[user.ID] = user
+    return nil
+}
+
+func (store *UserStore) userExists(id int64) bool {
+    _, ok := store.users[id]
+    return ok
+}
+```
+
+At first glance, this doesn't seem too bad. In fact, it might even seem like a rather simple insert function for a common list structure. We accpet a pointer as input and if no other users with this `id` exist, then we insert the user pointer into our list. Now, we use this functionality in our public API for creating new users:
+
+```go
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+    user, err := parseUserFromRequest(r)
+    if err != nil {
+        http.Error(w, err, http.StatusBadRequest)
+        return
+    }
+    if err := store.Insert(user); err != nil {
+        http.Error(w, err, http.StatusInternalServerError)
+        return
+    }
+    user.Password = ""
+    if err := json.NewEncoder(w).Encode(user); err != nil {
+        http.Error(w, err, http.StatusInternalServerError)
+    }
+}
+```
+
+Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a json object to our client. This is all quite common practice. 
+
+// UNFINISHED
 
 ### Interfaces in Go
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
