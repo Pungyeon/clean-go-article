@@ -1,14 +1,14 @@
 ---
-title: Clean Golang Code
-output: pdf
-
-todo:
-    - write section on closures
+TODO:
+- Using short-lived channels for returning results for a goroutine
 ---
+
+
 
 # Clean Golang Code
 
-## Abstract
+## Preface
+
 Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
 The document will start with a simple and short introduction of the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
@@ -20,7 +20,7 @@ The document will start with a simple and short introduction of the fundamentals
     * [Variable Naming](#Variable-Naming)
     * [Cleaning Functions](#Cleaning-Functions)
     * [Variable Scope](#Variable-Scope)
-* [Variable Declaration](#Variable-Declaration)
+    * [Variable Declaration](#Variable-Declaration)
     
 * [Clean Golang](#Clean-Golang)
     * [Returning Defined Errors](#Returning-Defined-Errors)
@@ -36,10 +36,11 @@ The document will start with a simple and short introduction of the fundamentals
     * Immutability - Variable Scope Continue 
 * [Index](#Index)
 
-### Introduction to Clean Code
+## Introduction to Clean Code
+
 Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
-#### Test Driven Development
+### Test Driven Development
 
 The core of creating clean code stems from creating good tests. Writing good tests helps create clean code, as it invites developers to think about the outcomes and test coverage of functions / functionality. It's easier to test a function that is only 4 lines, rather than a function, which is 40. In the same manner, a function which is 4 lines, is typically easier to understand than a function of 40 lines. Therefore, when using test driven development, the resulting code is much more likely to be of a cleaner nature. 
 
@@ -52,7 +53,7 @@ The next important part of test driven development, which is very closely relate
 
 Step three of the cycle, ensures that we can refactor our code as we are writing it. The tests ensure that our refactor doesn't change the outcome of our functions and we can therefore, essentially, go crazy refactoring our code to be as clean as possible. As we go along, and our codebase expands, we will still have our tests, to make sure that our refactoring will not affect the outcome of our functions.
 
-#### Function Naming
+### Function Naming
 Before we do anything that is going to change the logic of our code. We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
@@ -94,7 +95,7 @@ func getFileExtension(filepath string) string {
 
 This kind of logical progression in our function names, makes the code easier to follow and will make the code much easier to read. When we think about the opposite approach to function naming, it becomes even more clear why. If our highest level of abstraction becomes too specific, we will end up with a function name such as `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read and just adds confusion, more than anything else. We are trying to be too specific too quickly and therefore we end up being confusing, despite our intention of trying to be clear. 
 
-#### Variable Naming
+### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variable naming should progress from more to less specific. 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
@@ -140,10 +141,10 @@ func BeerBrandListToBeerList(b []BeerBrand) []Beer {
 
 Even though the function might still be readable, due to it's brevity, there is a strange off-putting feeling, when reading through the function. Should the scope of the variables or the logic of the function expand, this off-putting feel, becomes even worse and could potentially spiral into complete confusion. However, while on the topic of functions and their brevity, let's dive into the next topic of writing clean code.
 
-#### Cleaning Functions
+### Cleaning Functions
 In the words of Robert C. Martin: 
 
-> "How small should a function be? Smaller than that!"
+<center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</center>
 
 When writing clean code, our primary goal is to make our code easily digestable. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not to avoid code duplication, the actual reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
@@ -270,7 +271,7 @@ func GetItemIfActive(extension string) (Item, error) {
 
 While we are on the topic. There are also a bunch of other side-effects that writing this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (written by a sane person), than a function which is 400 lines. That's common sense. However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
 
-#### Variable Scope
+### Variable Scope
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
 
 ```go
@@ -356,7 +357,7 @@ func main() {
 }
 ```
 
-#### Variable Declaration 
+### Variable Declaration 
 
 Other than avoiding variable scope and mutability, we can also improve readability but keeping our variable declaration close to the logic. In C programming, it's common to see the following method for declaring variables:
 
@@ -465,12 +466,12 @@ func main() {
 
 Looking at the exampe above, it's clear how this also simplifies the usage of our package. This way of hiding the implementing, is not only beneficial for the maintainers of the package, but also the users of the package. Now, when initialising and using the `Sender` structure, there is no concern of the implementation. This opens up, for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact users of the package have.
 
-### Clean Golang
+## Clean Golang
 
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
 
 
-#### Returning Defined Errors
+### Returning Defined Errors
 We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
@@ -561,7 +562,7 @@ var NullItem = Item{
 
 > NOTE: Every interface property in golang, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
 
-#### Returning Dynamic Errors
+### Returning Dynamic Errors
 There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
 
 ```go
@@ -639,7 +640,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-#### Returning Other Values
+### Returning Other Values
 This section isn't going dive tremendously into the idea of returning values and how to ensure clean code in doing so. However, it's a topic will act as a nice lead-up to the next section of this article. As mentioned many times before, a big part of the *why* of writing clean code, is to ensure readability. Readability is obviously something that is somewhat subjective, however, despite this the following seems to be indisputable. In order to maximize readability, the code we write, should look similar, if the functionality is similar. This makes it easy to identify the functionality of functions and thereby enabling developers to read / skim code efficiently. 
 
 Take a look at the ending result from [Cleaning Functions](#Cleaning_Functions). These smaller functions all look and behave the same, in turn, making them very easily parseable. 
@@ -725,61 +726,7 @@ func NewItemFromJSON() (Item, error) {
 
 The second version may seem 'uglier', but in fact, it is the clean version. The biggest problem with the first function, is that it is returning the item, which is being mutated by the `json.Unmarshal` function. If an error occurs, we have no idea what the state of this variable is. The fact that we are sending a mutated version of our variable back, could lead to some unexpected results. We want to stay as far away from introducing undefined behaviour as we possibly can and therefore the second option is much preferred.
 
-** PROBABLY JUST DELETE THIS ENTIRE SECTION :'( ** 
-
-While on the topic, I would like to point out that the `json.Unmarshal` function is also bad practice. We will get back to this in more detail at another point. But for now, the most important point, is that we are mutating a pointer input and returning an error. This can also lead to some unexpected behaviour, as it doesn't necessarily force the user of the function, to think about the returned error. We will get back to why this is unavoidable in the case of an unmarshal function in golang, but let's have a quick look at why this should be avoided if possible.
-
-Consider the following code:
-
-```go
-func (store *Store) UpdateItem(item *Item) error {
-    storeItem, ok := store.items[item.ID] 
-    if !ok {
-        return NewErrorDetails(ErrItemNotFound, item.ID)
-    }
-    store.items[item.ID] = item.Merge(storeItem) // update non-null items
-    return nil
-}
-
-func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
-    item, err := NewItemFromHTTPRequest(r)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    store.UpdateItem(&item)
-    json.NewEncoder(w).Encode(item)
-}
-```
-
-In this case, we are both maintaining the `Store` and `Handler` functions, so therefore, we can very easily spot that there is something wrong here. We are not checking the error returned by `store.UpdateItem` in our handler function. This might lead to bugs, in which we return the updated item to our client, but haven't actually updated the item in the store. In this case, the bug will first be spotted upon trying to retrieve the item, which may happen at a much later time for the client, making this potentially very difficult to debug. The main reason, that this is a possibility, is because we are only returning an error an no value. To illustrate this, let's take a look at what would the code would look like, if we were to return a new variable instead.
-
-```go
-func (store *Store) UpdateItem(item Item) (Item, error) {
-    storeItem, ok := store.items[item.ID] 
-    if !ok {
-        return NewErrorDetails(ErrItemNotFound, item.ID)
-    }
-    return store.updateItem(item, storeItem)
-}
-
-func (store *Store) updateItem(item, storeItem Item) (Item, error) {
-    item.Merge(storeItem) // update non-null items
-    store.items[item.ID] = item
-    return item
-}
-
-func UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
-    item, err := NewItemFromHTTPRequest(r)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    store.UpdateItem(item)
-    json.NewEncoder(w).Encode(item)
-}
-```
-> WARNING : This doesn't actually illustrate anything, shit.
+// TODO: Seems like something is missing here
 
 ### Nil Values 
 A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. A lot of other languages have omitted this from their language, prioritising safety and therefore the equivalent of `nil` is in fact a type, rather than an actual null pointer. The reason for this, is that null pointers can cause a lot of trouble. We explained which troubles they can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to some up: Things break, when you try to access null pointers. 
@@ -927,9 +874,30 @@ Rather than having a linear ownership hand over, we have a tree of ownership ins
 ### Using `goto` in Go
 Just don't
 
+// TODO : Despite wonderful comedic effect, this should probably be elaborated upon
+
 ### Closures are Function Pointers
 
-So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. 
+So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. In Javascript, it is very common to use closures as callbacks, which is typically used in scenarios where upon we want to invoke a function after an asynchronous operation has finished. In Go, we don't really have this issue, or at the very least, we have other, much nicer, ways of solving this issue. Instead, in Golang, we can use closures to solve a different hurdle: The lack of generics. 
+
+Now, don't get too excited. We aren't going to substitute the lack of generics. We are simply going to solve a subset of the lack of generics with the use of closures. Consider the following function signature:
+
+```go
+func something(closure func(float64) float64) float64 { ... }
+```
+
+This function takes in a function, which returns a float64 and then returns a float64.
+
+// TODO : Finish this section
+
+Dave Cheney has an excellent write up on this topic, and a talk on the same topic:
+
+* https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
+* https://www.youtube.com/watch?v=5buaPyJ0XeQ&t=9s
+
+Jon Bodner also has a talk about this topic
+
+* https://www.youtube.com/watch?v=5IKcPMJXkKs
 
 ### Interfaces in Go
 
@@ -1266,7 +1234,7 @@ Everything comes with a price. Much like you *can't please all of the people all
 
 Of course, if your main goal is to write top-performant applications. You're best bet, probably isn't golang. Golang is definitely a good choice within performance, but we shouldn't kid ourselves into believing that it can compete with the likes of C/C++ (or even Rust). That being said, it doesn't mean that we should all thoughts on creating performant code out of the window. This section will look at some concepts of ensuring clean code, while still ensuring a minimum loss of performance.
 
-#### Immutability - (Variable Scope Continued)
+### Immutability - (Variable Scope Continued)
 Previously, we spoke about variable scope and how we should try to keep our variables immutable, as best possible. This is to avoid managing state, which is an immensely difficult part of programming and also to avoid confusion, when reading code. If state is changed in the flow of code, it can become extremely difficult to read and remember the current value of that state, making the code harder to debug. This becomes an even bigger problem when we start introducing concurrency into the picture. Functional programming languages pride themselves on being 100% concurrency safe, and rightly so! In functional programming all variables are immutable (at least to a certain extent). With this in mind, we can now guarantee that our code will never suffer from a race condition, as we will never mutate already allocated memory. That's neat!
 
 Now, while rather controversial to mention in the golang language community. Golang, performance-wise, really benefits from borrowing a functional style. The performance bottleneck for golang, is the garbage collector. In most cases, this is why C/C++ and Rust outperform golang. Solving certain problems, however, where the computation is very reliant on fast memory allocation, golang performs ***horribly***. As an example of this (from: [The Computer Language Benchamrks Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/performance/binarytrees.html)), Rust is almost 8 times faster than go at creating binary trees. Even more insulting, there are Nodejs implementations that are faster than the fastest golang implementation. 
