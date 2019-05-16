@@ -758,9 +758,47 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a json object to our client. This is all quite common practice. 
+Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a json object to our client. This is all quite common practice, typically when returning a user object, where the password has been hashed, we don't want to return the hashed password.
 
-// UNFINISHED
+However, this code is horribly flawed. If we check in our user store, see that the change we made to the users password in the http handler function, also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest`, is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
+
+This is a great example of why both mutability and variable scope, can cause some serious issues and bugs, when used incorrectly. The fix for this particular bug, is rather simple:
+
+```go
+func (store *UserStore) Insert(user User) error {
+    if store.userExists(user.ID) {
+        return ErrItemAlreaydExists
+    }
+    store.users[user.ID] = &user
+    return nil
+}
+```
+
+Instead of passing a pointer to a `User` struct, we are now passing in a copy of a `User`. We are still storing a pointer to our store, however, instead of storing the pointer from outside of the function, we are storing the pointer to the copied value, which scope is inside the function. This fixes the immediate problem, but might still cause issues further down the line, if we aren't careful.
+
+```go
+func (store *UserStore) Get(id int64) (*User, error) {
+    user, ok := store.users[id]
+    if !ok {
+        return EmptyUser, ErrUserNotFound
+    }
+    return store.users[id], nil
+}
+```
+
+Again, a very standard very simple implementation of a getter function for our store. However, this is still bad. We are once again expanding the scope of our pointer, which may end up causing unexpected side-effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bad, because it's bound to ensure confusion. Our store should be the only entity enabled to make changes to the values stored there. The easiest fix available for this, is to either return a value of `User` rather than returning a pointer. 
+
+Please keep in mind, that there is intrinsically nothing wrong with returning pointers, however, the expanding scope and liftetime of the variables is the important aspect, which makes the previous example a smelly operation. As an example, there is nothing wrong with the following example:
+
+```go
+func AddName(user *User, name string) {
+    user.Name = name
+}
+```
+
+The reason why this is *ok*, is that the scope, which is defined by whomever invokes the functions, remains the same after the function returns. 
+
+// This is actually really more about variable access than scope isn't it :/
 
 ### Interfaces in Go
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
