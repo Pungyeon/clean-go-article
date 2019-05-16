@@ -5,7 +5,6 @@ output: pdf
 todo:
     - write section on closures
     - write section on channel declaration
-    - specify pointer input / return handling
 ---
 
 # Clean Golang Code
@@ -27,6 +26,8 @@ The document will start with a simple and short introduction of the fundamentals
     * [Returning Defined Errors](#Returning-Defined-Errors)
     * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Returning Other Values](#Returning-Other-Values)
+    * [Pointers in Go](#Pointers-in-Go)
+    * [Using `goto` in Go](#Using-`goto`-in-Go)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The empty `interface{}`](#The-empty-`interface{}`)
 * [Go Code Generation](#Go-Code-Generation)
@@ -788,7 +789,7 @@ func (store *UserStore) Get(id int64) (*User, error) {
 
 Again, a very standard very simple implementation of a getter function for our store. However, this is still bad. We are once again expanding the scope of our pointer, which may end up causing unexpected side-effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bad, because it's bound to ensure confusion. Our store should be the only entity enabled to make changes to the values stored there. The easiest fix available for this, is to either return a value of `User` rather than returning a pointer. 
 
-Please keep in mind, that there is intrinsically nothing wrong with returning pointers, however, the expanding scope and liftetime of the variables is the important aspect, which makes the previous example a smelly operation. As an example, there is nothing wrong with the following example:
+Please keep in mind, that there is intrinsically nothing wrong with returning pointers, however, the expanded scope and number of owners of the variables is the important aspect, which makes the previous example a smelly operation. As an example, there is nothing wrong with the following example:
 
 ```go
 func AddName(user *User, name string) {
@@ -796,9 +797,24 @@ func AddName(user *User, name string) {
 }
 ```
 
-The reason why this is *ok*, is that the scope, which is defined by whomever invokes the functions, remains the same after the function returns. 
+The reason why this is *ok*, is that the scope, which is defined by whomever invokes the functions, remains the same after the function returns. This combined with the fact, that the ownership is also handled in a more straightforward manner. This functions will have an ownership something like:
 
-// This is actually really more about variable access than scope isn't it :/
+```
+ParentFn -> AddName (adds name) -> ParentFn
+```
+
+In other words the ownership is (logically) moved to the `AddName` function as is returned to whichever parent function, when the function returns. In contrast, our store returning pointers looked more like this:
+
+```
+HttpHandler -> store.Insert ->  HttpHandler -> 
+                                store.users ->
+ParentFn    -> store.Get    ->  ParentFn    ->
+```
+
+Rather than having a linear ownership hand over, we have a tree of ownership instead. With many different parts of our applicaton, that can mutate our variable in a potentially global scope.
+
+### Using `goto` in Go
+Just don't
 
 ### Interfaces in Go
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
