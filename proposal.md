@@ -4,7 +4,6 @@ output: pdf
 
 todo:
     - write section on closures
-    - write section on channel declaration
 ---
 
 # Clean Golang Code
@@ -21,13 +20,15 @@ The document will start with a simple and short introduction of the fundamentals
     * [Variable Naming](#Variable-Naming)
     * [Cleaning Functions](#Cleaning-Functions)
     * [Variable Scope](#Variable-Scope)
-
+* [Variable Declaration](#Variable-Declaration)
+    
 * [Clean Golang](#Clean-Golang)
     * [Returning Defined Errors](#Returning-Defined-Errors)
     * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Returning Other Values](#Returning-Other-Values)
     * [Pointers in Go](#Pointers-in-Go)
     * [Using `goto` in Go](#Using-`goto`-in-Go)
+    * [Closures are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The empty `interface{}`](#The-empty-`interface{}`)
 * [Go Code Generation](#Go-Code-Generation)
@@ -39,6 +40,7 @@ The document will start with a simple and short introduction of the fundamentals
 Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
 #### Test Driven Development
+
 The core of creating clean code stems from creating good tests. Writing good tests helps create clean code, as it invites developers to think about the outcomes and test coverage of functions / functionality. It's easier to test a function that is only 4 lines, rather than a function, which is 40. In the same manner, a function which is 4 lines, is typically easier to understand than a function of 40 lines. Therefore, when using test driven development, the resulting code is much more likely to be of a cleaner nature. 
 
 The next important part of test driven development, which is very closely related to clean code, is the TDD cycle:
@@ -352,11 +354,121 @@ func main() {
     }
     fmt.Println(val)
 }
-``` 
+```
+
+#### Variable Declaration 
+
+Other than avoiding variable scope and mutability, we can also improve readability but keeping our variable declaration close to the logic. In C programming, it's common to see the following method for declaring variables:
+
+```go
+
+
+func main() {
+  var err error
+  var items []Item
+  var sender, receiver chan Item
+  
+  items = store.GetItems()
+  sender = make(chan Item)
+  receiver = make(chan Item)
+  
+  for _, item := range items {
+    ...
+  }
+}
+```
+
+This suffers from the same symptom as described in variable scope. Even though that these variables might not actually be re-assigned ay any point, this kind of style, will keep the readers on their toes, in all the wrong ways. Much like computer memory, our brain has a limited amount to allocate from. Having to keep track of which variables could be mutated and whether or not something will mutate these items, will only make it more difficult to get a good overview of what is happening in the code. Finding out the eventually returned value contains, can be a nightmare. Therefore, to makes this easier for our readers, which could potentially be a future version of ourselves, it is good practice to declare variables as close to their usage as possible. So, this is slightly better:
+
+```go
+func main() {
+  var sender chan Item
+  sender = make(chan Item)
+  
+  go func() {
+   	for {
+    	select {
+      case item := <- sender:
+        // do something
+      }
+  	} 
+  }()
+}
+```
+
+However, we can do even better than this, by invoking the function directly on declaration. 
+
+```go
+func main() {
+  sender := func() chan Item {
+    channel := make(chan Item)
+    go func() {
+      for {
+        select { ... }
+      }
+    }()
+    return channel
+  }
+}
+```
+
+And coming full circle, we can omit the anonymous function and make it a named function instead:
+
+```go
+func main() {
+  sender := NewSenderChannel()
+}
+
+func NewSenderChannel() chan Item {
+  channel := make(chan Item)
+  go func() {
+    for {
+      select { ... }
+    }
+  }()
+  return channel
+}
+```
+
+Just like in the previous section, we are now declaring our function and tying it with it's logic, immediately. This makes it easier to traverse code and understand the responsibility of each variable.
+
+Of course, this doesn't actually limit us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means, that we will have to restrain ourselves from mutating this variable at a later point in the code.
+
+> NOTE: The keyword `const` does exist, but are limited for use on primitive types. 
+
+One way of getting around this, which at least will limit the mutability of a variable to a package level. Is to create a structure, with the variable as a private property. This private property is thenceforth, only accesible through other methods of this wrapping structure. Expanding on our channel example, this would look something like the following:
+
+```go
+type Sender struct {
+  sender chan Item
+}
+
+func NewSender() *Sender {
+  return &Sender{
+    sender: NewSenderChannel(),
+  }
+}
+
+func (s *Sender) Send(item Item) chan Item {
+  s.sender <- item
+}
+```
+
+We have now ensured, that the `sender` property of our `Sender` struct, is never mutated. At least not, from outside of the package. As of writing this document, this is the only way of creating publicly immutable non-primitive variables. It's a little verbose, but it's truly worth the effort, to ensure that we don't end up with strange bugs, that could be the outcome of mutating properties of our structure. 
+
+```go
+func main() {
+  sender := NewSender()
+  sender.Send(&Item{})
+}
+```
+
+Looking at the exampe above, it's clear how this also simplifies the usage of our package. This way of hiding the implementing, is not only beneficial for the maintainers of the package, but also the users of the package. Now, when initialising and using the `Sender` structure, there is no concern of the implementation. This opens up, for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact users of the package have.
 
 ### Clean Golang
+
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
- 
+
 
 #### Returning Defined Errors
 We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returning method will improve all three aspects, with very little effort.
@@ -439,7 +551,6 @@ This feels much nicer and is also much safer. Some would even say that it's easi
 
 This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. Again, this is more foolproof for future development and thereby also makes the code more maintainable. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
 
-EXPLAIN THIS BETTER MAING
 Returning default `Null` values like the previous examples, can also be more safe, in certain caes. As an example, a user of our package could forget to check for errors and end up initialising an empty struct containing a default value of `nil`. When attempting to access this `nil` value later in the code, this could cause a panic in thier code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value appraoch, we now only have to change our code in a single place:
 
 ```go
@@ -816,7 +927,12 @@ Rather than having a linear ownership hand over, we have a tree of ownership ins
 ### Using `goto` in Go
 Just don't
 
+### Closures are Function Pointers
+
+So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. 
+
 ### Interfaces in Go
+
 In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
 
 There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
@@ -945,7 +1061,7 @@ Let's quickly get back to clean code and quickly get back to using interfaces th
 
 <center style="font-style: italic">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
 
-> NOTE: This proverb is actually taken from an early specification of the TCP networking protocol.
+> FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
 In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that inteface.
 
