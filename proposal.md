@@ -1,6 +1,7 @@
 ---
 TODO:
 - Using short-lived channels for returning results for a goroutine
+- Elaborate on why comments should stay out of code logic
 ---
 
 
@@ -9,9 +10,15 @@ TODO:
 
 ## Preface
 
-Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
+The motivation behind writing this document, is to create a resource (and eventually a reference) for the Go community, which will help developers write cleaner code. This benefits every one of us. Whether we are writing code by ourselves, or writing code in larger teams. Establishing good paradigms for writing clean code and ensuring that this is available for everyone, will help prevent many meaningless hours on trying to understand and parse others (and our own) code.  
 
-The document will start with a simple and short introduction of the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
+<center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </center>
+
+The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shapre or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
+
+Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically takes a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
+
+This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
 
 ## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
@@ -146,7 +153,7 @@ In the words of Robert C. Martin:
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</center>
 
-When writing clean code, our primary goal is to make our code easily digestable. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not to avoid code duplication, the actual reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
+When writing clean code, our primary goal is to make our code easily digestable. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not necessarily to avoid code duplication. The more promenant reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
 ```
 fn GetItem:
@@ -156,7 +163,7 @@ fn GetItem:
     - get order from database
 ```
 
-When using small functions (typically 5-8 lines in Golang), we can create a function that reads almost as easily as our description:
+When using small functions (typically 5-8 lines in Go), we can create a function that reads almost as easily as our description:
 
 ```go
 var (
@@ -169,38 +176,48 @@ func GetItem(ctx context.Context, json []bytes) (Item, error) {
     if err != nil {
         return NullItem, err
     }
-    if GetUserFromContext(ctx).IsAdmin() {
-        return db.GetItem(order.ID)
+    if !GetUserFromContext(ctx).IsAdmin() {
+	      return NullItem, ErrInsufficientPrivliges
     }
-    return NullItem, ErrInsufficientPrivliges
+    return db.GetItem(order.ID)
 }
 ```
+
+// The `GetItem` function builds on many other smaller functions
 
 Using smaller functions also has a side-effect of eliminating another horrible habit of writing code: indentation hell. Indentation hell, typically occurs when a chain of if statements are clumsily inserted into a function. This makes the code very, very difficult to parse (for human beings) and should be eliminated whenever spotted. This is particularly common when working with `interface{}` and using type casting:
 
 ```go
-func GetItemIfActive(extension string) (Item, error) {
+func GetItem(extension string) (Item, error) {
     if refIface, ok := db.ReferenceCache.Get(extension); ok {
         if ref, ok := refIface.(string); ok {
             if itemIface, ok := db.ItemCache.Get(ref); ok {
                 if item, ok := itemIface.(Item); ok {
                     if item.Active {
                         return Item, nil
-                    } // return no item active
-                } // return cast error on item interface
-            } // return no item found in cache by reference
-        } // return cast error on reference 
+                    } else {
+                      return EmptyItem, errors.New("no active item found in cache")
+                    }
+                } else {
+                  return EmptyItem, errors.New("could not cast cache interface to Item")
+                }
+            } else {
+              return EmptyItem, errors.New("extension was not found in cache reference")
+            }
+        } else {
+          return EmptyItem, errors.New("could not cast cache reference interface to Item")
+        }
     }
     return EmptyItem, errors.New("reference not found in cache")
 }
 ```
 
-Not only, can this kind of code result in a very bad IDE experience for some programmers (due to line length), it's also almost impossible to track the flow of the code. It has to be noted, that go is not particularly likely to produce this kind of code, compared to languages with `try` `catch` blocks or typical callback implementations, but this still should be avoided at all costs. Please, keep in mind that the code above is a small example, with very simple code. As soon as it becomes more complex, the sphagetti factor of the code, grows exponentially. 
+Not only can this kind of code result in a really bad experience for other programmers, who will have to fight with having to the flow of the code. Should the logic in our `if` statements expand, it becomes exponentially more difficult to figure out which statement returns what. It is unfortunately not uncommon to find this kind of implementation in code. I have even bumped into examples of the beginning `if` statement of a correspending `else` statement, was on another page of my monitor. Having to scroll up and  down a page, while trying to figure out what a function does, is not ideal. Even though, we don't have to scroll on our page to see the corresponding `if else` statements in the above code sample, we are still scrolling with our eyes and maintaining state in our brain. Even though, this is probably something that we can overcome locally, by creating the function above, we have forced the readers of our code to use unecessary brain power on parsing our function logic. Which we of course, want to avoid.
 
-So, how do we clean this? Well, it's actually quite simple. The first iteration, is to ensure that we are returning an error as soon as we can. Once we are done with this, we can split up our function into smaller functions as mentioned previously: 
+So, how do we clean this function? Foruntately, it's actually quite simple. On our first iteration, we will try to  ensure that we are returning an error as soon as we can. Instead of nested the `if else` statements, we want to "push our code to the left". This is handled by returning from our function, as soon as we possibly can.  
 
 ```go
-func GetItemIfActive(extension string) (Item, error) {
+func GetItem(extension string) (Item, error) {
     refIface, ok := db.ReferenceCache.Get(extension)
     if !ok {
         return EmptyItem, errors.New("reference not found in cache")
@@ -226,17 +243,17 @@ func GetItemIfActive(extension string) (Item, error) {
 }
 ```
 
-And on second iteration, we will get something similar to the following:
+Once we are done with this, we can split up our function into smaller functions as mentioned previously. Every time that we see the `value, err :=` pattern repeated more than once in a function, this should be an indication, that we should move this logic into it's own function, if possible.
 
 ```go
-func GetItemIfActive(extension string) (Item, error) {
+func GetItem(extension string) (Item, error) {
     if ref, ok := getReference(extension) {
-        // return cast error on reference 
+        return EmptyItem, ErrReferenceNotFound
     }
-    return getActiveItemByReference(ref)
+    return getItemByReference(ref)
 }
 
-func getItemByReference(extension string) (string, bool) {
+func getReference(extension string) (string, bool) {
     refIface, ok := db.ReferenceCache.Get(extension)
     if !ok {
         return EmptyItem, false
@@ -244,24 +261,24 @@ func getItemByReference(extension string) (string, bool) {
     return refIface.(string)
 }
 
-func getActiveItemByReference(reference string) (Item, ) {
-    item, ok := getItemByReference(reference)
+func getItemByReference(reference string) (Item, error) {
+    item, ok := getItemFromCache(reference)
     if !item.Active || !ok {
-        return EmptyItem, false
+        return EmptyItem, ErrItemNotFound
     }
     return Item, nil
 }
 
-func getItemByReference(reference string) (Item, bool) {
+func getItemFromCache(reference string) (Item, bool) {
     if itemIface, ok := db.ItemCache.Get(ref); ok {
         return EmptyItem, false
     }
     return itemIface.(Item), true
 }
 ```
-> For production code, one should elaborate on the code even further, by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functinos, the `bool` values will suffice for now.  
+> For production code, one should elaborate on the code even further, by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, the `bool` values will suffice for now.  
 
-Now, this is many more lines of code than our first iteration. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code that we aren't interested in knowing the details of and diving deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleaniless of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
+Now, this is many more lines of code than our first iteration. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code details that we aren't interested in and dive deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleaniless of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
 
 ```go
 func GetItemIfActive(extension string) (Item, error) {
@@ -269,7 +286,11 @@ func GetItemIfActive(extension string) (Item, error) {
 }
 ```
 
-While we are on the topic. There are also a bunch of other side-effects that writing this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (written by a sane person), than a function which is 400 lines. That's common sense. However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
+While we are on the topic. There are also a bunch of other side-effects that come along when writing in this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (written by a sane person), than a function which is 400 lines. That's common sense. 
+
+// TODO : what the fuck does this mean?
+
+However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
 
 ### Variable Scope
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
@@ -886,9 +907,78 @@ Now, don't get too excited. We aren't going to substitute the lack of generics. 
 func something(closure func(float64) float64) float64 { ... }
 ```
 
-This function takes in a function, which returns a float64 and then returns a float64.
+This function takes in a function, which returns a float64 and then returns a float64. This pattern can be particularly useful, for creating a loosely coupled architecture, making it easier to to add functionality, without affecting other parts of the code. An example use case of this, could be that we had a structure, containing some data. Through this structures `Do()` method, we can perform operations on this data. If we know the operation ahead of time, we can approach problem this by placing the logic for handling the different operations, directly in our `Do()` method:
 
-// TODO : Finish this section
+```go
+func (datastore *Datastore) Do(operation Operation, data []byte) error {
+  switch(operation) {
+  case COMPARE:
+    return datastore.compare(data)
+  case CONCAT:
+    return datastore.add(data)
+  default:
+    return ErrUnknownOperation
+  }
+}
+```
+
+As we can imagine, this function will perform a predetermined operation on the data contained in the `Datastore` struct. However, we can also imagine, that at some point we would want to add more operations. Over a longer period of time, this might end up being quite a lot of different operations, making  our `Do` method bloated and possibly even hard to maintain. It might also be an issue for people wanting to use our `Datastore` object, who don't have access to edit our package code. Keeping in mind, that there are no way of extending structure methods as there is in most OOP languages, this could also become an issue for developers wanting to use our package. 
+
+So instead, let's try a different approach, using closures instead:
+
+```go
+func (datastore *Datastore) Do(operation func(data []byte, data []byte) ([]byte, error), data []byte) error {
+  result, err := operation(datastore.data, data)
+  if err != nil {
+    return err
+  }
+  datastore.data = result
+  return nil
+}
+
+func concat(a []byte, b []byte) ([]byte, error) {
+  ...
+}
+
+func main() {
+  ...
+  datastore.Do(concat, data)
+  ...
+}
+```
+
+However, other than this being a very messy function signature, we also have another issue with this. This function isn't particularly generic. What happens, if we find out that we actually want the `concat` function needs to be able to take multiple byte arrays as input? Or if want to add some completely new functionality, that may also need more or less input values than `(data []byte, data []byte)` ?
+
+One way to solve this issue, is to change our concat function. In the example below, I have changed it to only take a single byte array as input argument, but it could just as well have been the opposite case. 
+
+```go
+func concat(data []byte) func(data []byte) func(data []byte) ([]byte, error) {
+  return func(concatting []byte) ([]byte, error) {
+    return append(data, concatting), nil
+  }
+}
+
+func (datastore *Datastore) Do(operation func(data []byte) ([]byte, error)) error {
+  result, err := operation(datastore.data)
+  if err != nil {
+    return err
+  }
+  datastore.data = result
+  return nil
+}
+
+func main() {
+  ...
+  datastore.Do(compare(data))
+  ...
+}
+```
+
+Notice how we have added some of the clutter from the `Do` method signature. The way that we have accomplished this, is by having our `concat` function return a function. Within the returned function, we are storing the input values originally passed in to our `concat` function. The returned function can therefore now take a single input parameter, and within our function logic, we will append it, with our original input value. As a newly introduced concept, this is quite strange, however, getting used to having this as an option can indeed help loosen up program coupling and help get rid of bloated functions. 
+
+In the next section, we will talk about interfaces, but let's take a short moment to talk about the difference between interfaces and closures. The problems that interfaces solve, definitely  overlap with the problems solved by closures.  The implementation of interfaces in Go makes the distinction of when to use one or the other, somewhat difficult at times. Usually, whether an interface or a closure is used, is not really of importance and whichever solves the problem in the simplest manner, is the right choice. Typically, closures will be simpler to implement, if the operation is simple by nature. However, as soon as the logic contained within a closure becomes complex, one should strongly consider using an interface instead.  
+
+// TODO : Still not particularly happy the ending of this chapter, still seems unfinished
 
 Dave Cheney has an excellent write up on this topic, and a talk on the same topic:
 
