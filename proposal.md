@@ -1,7 +1,11 @@
 ---
 TODO:
 - Using short-lived channels for returning results for a goroutine
+	- This should be added by 
 - Elaborate on why comments should stay out of code logic
+- REMINDER: Do we have anything about function signatures? And ensuring that there are only at maximum, 3 input parameters?
+- Remove the sections on
+	- performance
 ---
 
 
@@ -23,16 +27,20 @@ This document will start with a simple and short introduction to the fundamental
 ## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * [Test Driven Development](#Test-Driven-Development)
-    * [Function Naming](#Function-Naming)
-    * [Variable Naming](#Variable-Naming)
+    * [Naming](#Naming)
+    	* [Function Naming](#Function-Naming)
+    	* [Variable Naming](#Variable-Naming)
     * [Cleaning Functions](#Cleaning-Functions)
+      * [Function Length](#Function-Length)
+      * [Function Signatures](#Function-Length)
     * [Variable Scope](#Variable-Scope)
     * [Variable Declaration](#Variable-Declaration)
     
 * [Clean Golang](#Clean-Golang)
-    * [Returning Defined Errors](#Returning-Defined-Errors)
-    * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
-    * [Returning Other Values](#Returning-Other-Values)
+		* [Return Values](#Return Values) 
+      * [Returning Defined Errors](#Returning-Defined-Errors)
+      * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
+      * [Returning Other Values](#Returning-Other-Values)
     * [Pointers in Go](#Pointers-in-Go)
     * [Using `goto` in Go](#Using-`goto`-in-Go)
     * [Closures are Function Pointers](#Closures-are-Function-Pointers)
@@ -60,7 +68,10 @@ The next important part of test driven development, which is very closely relate
 
 Step three of the cycle, ensures that we can refactor our code as we are writing it. The tests ensure that our refactor doesn't change the outcome of our functions and we can therefore, essentially, go crazy refactoring our code to be as clean as possible. As we go along, and our codebase expands, we will still have our tests, to make sure that our refactoring will not affect the outcome of our functions.
 
-### Function Naming
+###  Naming
+
+#### Function Naming
+
 Before we do anything that is going to change the logic of our code. We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
@@ -102,7 +113,7 @@ func getFileExtension(filepath string) string {
 
 This kind of logical progression in our function names, makes the code easier to follow and will make the code much easier to read. When we think about the opposite approach to function naming, it becomes even more clear why. If our highest level of abstraction becomes too specific, we will end up with a function name such as `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read and just adds confusion, more than anything else. We are trying to be too specific too quickly and therefore we end up being confusing, despite our intention of trying to be clear. 
 
-### Variable Naming
+#### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variable naming should progress from more to less specific. 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
@@ -149,6 +160,10 @@ func BeerBrandListToBeerList(b []BeerBrand) []Beer {
 Even though the function might still be readable, due to it's brevity, there is a strange off-putting feeling, when reading through the function. Should the scope of the variables or the logic of the function expand, this off-putting feel, becomes even worse and could potentially spiral into complete confusion. However, while on the topic of functions and their brevity, let's dive into the next topic of writing clean code.
 
 ### Cleaning Functions
+#### Function Signatures
+
+#### Function Length
+
 In the words of Robert C. Martin: 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</center>
@@ -491,8 +506,9 @@ Looking at the exampe above, it's clear how this also simplifies the usage of ou
 
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
 
+### Return Values
 
-### Returning Defined Errors
+#### Returning Defined Errors
 We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
@@ -583,7 +599,7 @@ var NullItem = Item{
 
 > NOTE: Every interface property in golang, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
 
-### Returning Dynamic Errors
+#### Returning Dynamic Errors
 There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
 
 ```go
@@ -661,7 +677,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-### Returning Other Values
+#### Returning Other Values
 This section isn't going dive tremendously into the idea of returning values and how to ensure clean code in doing so. However, it's a topic will act as a nice lead-up to the next section of this article. As mentioned many times before, a big part of the *why* of writing clean code, is to ensure readability. Readability is obviously something that is somewhat subjective, however, despite this the following seems to be indisputable. In order to maximize readability, the code we write, should look similar, if the functionality is similar. This makes it easy to identify the functionality of functions and thereby enabling developers to read / skim code efficiently. 
 
 Take a look at the ending result from [Cleaning Functions](#Cleaning_Functions). These smaller functions all look and behave the same, in turn, making them very easily parseable. 
@@ -1117,7 +1133,7 @@ The explanation being, that an interface method in Go, is essentially a function
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
-<center style="font-style: italic">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
+<center style="font-style: italic; margin: 0 100px 0 100px">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
 
 > FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
