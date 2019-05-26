@@ -6,7 +6,71 @@ TODO:
 - REMINDER: Do we have anything about function signatures? And ensuring that there are only at maximum, 3 input parameters?
 - Remove the sections on
 	- performance
+- pointers aren't really pointers… don't use pointers in go
+- Using first class functions and closures for performance 
 ---
+
+```go
+func Processor(call audio.Call, channels int, rx chan Data) func(chunk []byte) {
+	if channels == 2 {
+		return func(chunk []byte) {
+			left, right := audio.DeinterleavePCMBytes(chunk)
+			rx <- NewData(call, left, right)
+		}
+	}
+	return func(chunk []byte) {
+		rx <- NewData(call, chunk, []byte{})
+	}
+}
+```
+
+```yaml
+- create a section on wrapping functions as a method of loosely coupling your code with one another, rather than making direct changes to your logic.
+```
+
+```go
+// HTTPClientWrapper is a wrapper for the standard http client
+// which ensures that a non 2xx return code is regarded as an error
+type HTTPClientWrapper struct {
+	client *http.Client
+	check  func(status int) bool
+}
+
+// NewHTTPClientWrapper will initialise and return a new http client wrapper
+func NewHTTPClientWrapper(checker func(status int) bool) *HTTPClientWrapper {
+	return &HTTPClientWrapper{
+		check: checker,
+		client: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 20,
+			},
+			Timeout: time.Duration(1) * time.Second,
+		},
+	}
+}
+
+// Get will invoke the get function on the wrapped client and check the status
+// to ensure it is a 2xx return code
+func (wrapper *HTTPClientWrapper) Get(url string) (*http.Response, error) {
+	resp, err := wrapper.client.Get(url)
+	if err != nil {
+		return &http.Response{}, err
+	}
+	if !wrapper.check(resp.StatusCode) {
+		return &http.Response{}, fmt.Errorf(
+			"error on sending request to [%s] - returned with status: %s",
+			url, resp.Status)
+	}
+	return resp, err
+}
+
+// Do will invoke the Do function on the wrapped client
+func (wrapper *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
+	return wrapper.client.Do(req)
+}
+```
+
+
 
 
 
