@@ -3,7 +3,6 @@ TODO:
 - Using short-lived channels for returning results for a goroutine
 	- This should be added by 
 - Elaborate on why comments should stay out of code logic
-- REMINDER: Do we have anything about function signatures? And ensuring that there are only at maximum, 3 input parameters?
 - Remove the sections on
 	- performance
 - pointers aren't really pointers… don't use pointers in go
@@ -224,8 +223,6 @@ func BeerBrandListToBeerList(b []BeerBrand) []Beer {
 Even though the function might still be readable, due to it's brevity, there is a strange off-putting feeling, when reading through the function. Should the scope of the variables or the logic of the function expand, this off-putting feel, becomes even worse and could potentially spiral into complete confusion. However, while on the topic of functions and their brevity, let's dive into the next topic of writing clean code.
 
 ### Cleaning Functions
-#### Function Signatures
-
 #### Function Length
 
 In the words of Robert C. Martin: 
@@ -370,6 +367,84 @@ While we are on the topic. There are also a bunch of other side-effects that com
 // TODO : what the fuck does this mean?
 
 However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
+
+#### Function Signatures
+
+Creating good function naming structure, makes it easier to read and understand the intent of code. Making our functions shorter, helps with the understanding of the content of the function logic.  The last part of cleaning our functions, will be to understand the context of the function input. With this, comes another easy to follow rule. Function signatures, should only contain one or two input parameters. On certain exceptional occasions, three can be acceptable, but this is where we should start considering a refactor. Much like the rule that our function should only be 5-8 lines long, this can seem quite extreme at first. However, I feel that this rule is more immediately demonstrably true. 
+
+As an example, take the following function from the RabbitMQ introduction tutorial, to their Go library:
+
+```go
+q, err := ch.QueueDeclare(
+  "hello", // name
+  false,   // durable
+  false,   // delete when unused
+  false,   // exclusive
+  false,   // no-wait
+  nil,     // arguments
+)
+```
+
+The function `QueueDeclare` takes six input parameters, which is quite extreme. The above code is somewhat possible to understand, because of the comments, but as mentioned earlier: Comments should be substituted with descriptive code. One good reason for this, is that there is nothing preventing us from invoking the `QueueDeclare` function without comments, making it look like this:
+
+```go
+q, err := ch.QueueDeclare("hello", false, false, false, false, nil)
+```
+
+Now, without looking at the previous code, try to remember what the fourth and fifth `false` represent. It's impossible, and it's inevitable that we will forget at some point. This can lead to costly mistakes, and bugs that are difficult to correct. The mistakes might even occur through incorrect comments. Imagine labelling the wrong input parameter. Correcting this mistake, will be unbearably difficult to correct, especially when familiarity with the code has deteriorated over time or was low to begin with. Therefore, it is recommended to replace these input parameters, with an 'Options' `struct` instead:
+
+```go
+type QueueOptions struct {
+    Name string
+    Durable bool
+    DeleteOnExit bool
+    Exclusive bool
+    NoWait bool
+    Arguments []interface{} 
+}
+
+q, err := ch.QueueDeclare(QueueOptions{
+    Name: "hello",
+    Durable: false,
+    DeleteOnExit: false,
+    Exclusive: false,
+    NoWait: false,
+    Arguments: nil,
+})
+```
+
+This solves both the problem of omitting comments or accidentally labelling the variables incorrectly. Of course, we can still confuse properties with the wrong value, but in these cases, it will be much easier to determine where our mistakes lies within the code. The ordering of the properties also do not matter anymore and therefore incorrectly ordering the input values, no longer is a worry. The last added bonus of this technique, is that we can use our Option `struct`, to infer default values of our functions input parameters. When structures in Go are declared, all properties are initialised to their default value. This means, that our `QueueDeclare` option, can actually be invoked in the following way:
+
+```go
+q, err := ch.QueueDeclare(QueueOptions{
+    Name: "hello",
+})
+```
+
+The rest of the values are by initialised to their default `false` values (except for `Arguments`, which, as an interface has a default value of `nil`). Not only are we much safer, we are more clear with our intentions and in this case, we could actually write less code. This is an all around win.
+
+// Maybe this should start a new section about wrapping functions ? 
+
+A last note on this, is that it's not always possible to change the function signatures. As in this case, we don't have control of our `QueueDeclare` function signature, since this is from the RabbitMQ library. It's not our code, we can't change it. However, we can wrap these functions, to suit our purposes:
+
+```go
+type RMQChannel struct {
+    channel *amqp.Channel
+}
+
+func (rmqch *RMQChannel) QueueDeclare(opts QueueOptions) (Queue, error) {
+    return rmqch.channel.QueueDeclare(
+        opts.Name,
+        opts.Durable,
+        opts.DeleteOnExit,
+        opts.Exclusive,
+        opts.NoWait,
+        opts.Arguments, 
+    )
+} 
+```
+
+Basically, we create a new structure `RMQChannel` which contains the `amqp.Channel` type, which has the `QueueDeclare` method. We then create our own version of this method, which essentially just calls the old version of the RabbitMQ library function. Our new method has all the advantages described before and we achieved this, without actually having access to changing any code in the RabbitMQ library. 
 
 ### Variable Scope
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
