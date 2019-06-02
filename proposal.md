@@ -2,30 +2,10 @@
 TODO:
 - Using short-lived channels for returning results for a goroutine
 	- This should be added by 
-- Elaborate on why comments should stay out of code logic
 - Remove the sections on
 	- performance
-- pointers aren't really pointers… don't use pointers in go
-- Using first class functions and closures for performance 
----
-
-```go
-func Processor(call audio.Call, channels int, rx chan Data) func(chunk []byte) {
-	if channels == 2 {
-		return func(chunk []byte) {
-			left, right := audio.DeinterleavePCMBytes(chunk)
-			rx <- NewData(call, left, right)
-		}
-	}
-	return func(chunk []byte) {
-		rx <- NewData(call, chunk, []byte{})
-	}
-}
-```
-
-```yaml
 - create a section on wrapping functions as a method of loosely coupling your code with one another, rather than making direct changes to your logic.
-```
+---
 
 ```go
 // HTTPClientWrapper is a wrapper for the standard http client
@@ -91,6 +71,7 @@ This document will start with a simple and short introduction to the fundamental
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * [Test Driven Development](#Test-Driven-Development)
     * [Naming](#Naming)
+    * * [Comments](#Comments)
     	* [Function Naming](#Function-Naming)
     	* [Variable Naming](#Variable-Naming)
     * [Cleaning Functions](#Cleaning-Functions)
@@ -133,9 +114,48 @@ Step three of the cycle, ensures that we can refactor our code as we are writing
 
 ###  Naming
 
+#### Comments
+First things first: I want to address the topic of comments. Unecessary comments are the biggest indicator of code smell. Comments are usually added into a code base, because something is so unclear, that it's deemed necessary to explain with a comment. Of course, this is not always the case. In Go, all according to `gofmt` all public variables and functions, should be annotated. I think this is absolutely fine, as this makes documentation easy. However, I therefore always want to distinguish between comments which enable auto-generated documentation and all other comments. Annotation comments, for documentation, should be written like documentation. They should be high level and concern the logical implementation as little as possible, other than on the highest abstraction level. 
+
+The reasoning behind this, is that there are other ways to explain code and ensure that code is being written comprehensibly and expressively. If the code is neither of the two, some people find it acceptable to replace this, with a comment explaining the logic. The matter of the fact is, that most people will not read comments, because it's very intrusive to the experience of reading code. However, let's start from the beginning. Bad comments:
+
+```go
+// iterate over the range 0 to 9 
+// and invoke the doSomething function
+// for each iteration
+for i := 0; i < 10; i++ {
+  doSomething(i)
+}
+```
+
+This comment, is what I call a tutorial comment. It's pretty common in tutorials, which explain the low level functionality of a language (or programming on a more general level). The matter of the fact is, that these comments are absolutely useless in production code. Hopefully, we aren't collaborating with other programmers, who don't understand that principles behind the language we have chosen to write in, or even worse, don't understand simple principles of programming. As programmers, we don't have to read the comment, we know this is happening, by reading the code. Hence the proverb:
+
+<center style="margin: 0 100px 20px 100px; font-style: italic">"Document why, not how." - Venkat Subramaniam</center>
+
+Following this logic, we can now change our comment, to explain why we are iterating from the range zero to nine:
+
+```go
+// instatiate 10 threads to handle upcoming work load
+for i := 0; i < 10; i++ {
+  doSomething(i)
+}
+```
+
+Now we can understand why we are iterating and we can tell what we are doing, by reading the code. The worrying part about this comment is, that this probably should be necessary to express in prose. We can quite easily express this directly in our code instead:
+
+```go
+for worker_id := 0; worker_id < 10; worker_id++ {
+  instantiateThread(worker_id)
+}
+```
+
+With just a few changes of our variable and function names, we have established explanations of our action, directly in our code. This is much clearer for the reader, because the reader won't have to read the comment and then map the prose comment to the code. Instead, they can read the code and immediately understand everything which is going on. 
+
+Of course, this example, was relatively easy. It's unfortunately not always this easy and writing clear and expressive code becomes increasingly difficult, together with code complexity. So let's have a look at some methods, which will help make this task easier. 
+
 #### Function Naming
 
-Before we do anything that is going to change the logic of our code. We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
 func main() {
