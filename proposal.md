@@ -2,8 +2,6 @@
 TODO:
 - Using short-lived channels for returning results for a goroutine
 	- This should be added by 
-- Remove the sections on
-	- performance
 - create a section on wrapping functions as a method of loosely coupling your code with one another, rather than making direct changes to your logic.
 ---
 
@@ -62,8 +60,6 @@ The motivation behind writing this document, is to create a resource (and eventu
 <center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </center>
 
 The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shapre or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
-
-Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically takes a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
 This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
 
@@ -168,7 +164,7 @@ func main() {
 }
 ```
 
-Our focus being on the naming of the `Parse` function. Despite this function name being very short and general, it's actually quite clear what this function attempts to achieve. Still following the same naming function, when we go one layer deeper, our function naming will become slightly more specific:
+Our focus being on the naming of the `Parse` function. Despite this function name being very short and general, it's actually quite clear what this function attempts to achieve. When we go one layer deeper, our function naming will become slightly more specific:
 
 ```go
 func Parse(filepath string) (Config, error) {
@@ -185,7 +181,9 @@ func Parse(filepath string) (Config, error) {
 }
 ```
 
-Now that we have gone a layer deeper into our functions, our naming is now slightly more specific. Not much, but appropriately. It's still clear what the difference is between the parent function and the sub-functions, without being overly specific. Notice that `getFileExtension` is actually a little more specific. However, this is because the functionality of this function is, in fact, quite specific:
+More specific, but not much, just appropriately. It's still clear what the difference is between the parent function and the sub-functions, without being overly specific. This enables each sub-function to appear clear on it's own, whereas if we had named the `parseJSON` function `json` instead. This would not have been the case. 
+
+Notice that `getFileExtension` is actually a little more specific. However, this is because the functionality of this function is, in fact, quite specific:
 
 ```go
 func getFileExtension(filepath string) string {
@@ -201,7 +199,7 @@ Rather interestingly, the opposite is true for variables. Unlike functions, our 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
 
-The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. Because the context of the variable is so clear, it is unecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. Keep in mind that this is not considered clean code, this illustrates quite perfectly, the idea of variable naming becoming less and less specific:
+The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
 
 
 ```go
@@ -275,11 +273,9 @@ func GetItem(ctx context.Context, json []bytes) (Item, error) {
     if !GetUserFromContext(ctx).IsAdmin() {
 	      return NullItem, ErrInsufficientPrivliges
     }
-    return db.GetItem(order.ID)
+    return db.GetItem(order.ItemID)
 }
 ```
-
-// The `GetItem` function builds on many other smaller functions
 
 Using smaller functions also has a side-effect of eliminating another horrible habit of writing code: indentation hell. Indentation hell, typically occurs when a chain of if statements are clumsily inserted into a function. This makes the code very, very difficult to parse (for human beings) and should be eliminated whenever spotted. This is particularly common when working with `interface{}` and using type casting:
 
@@ -308,9 +304,9 @@ func GetItem(extension string) (Item, error) {
 }
 ```
 
-Not only can this kind of code result in a really bad experience for other programmers, who will have to fight with having to the flow of the code. Should the logic in our `if` statements expand, it becomes exponentially more difficult to figure out which statement returns what. It is unfortunately not uncommon to find this kind of implementation in code. I have even bumped into examples of the beginning `if` statement of a correspending `else` statement, was on another page of my monitor. Having to scroll up and  down a page, while trying to figure out what a function does, is not ideal. Even though, we don't have to scroll on our page to see the corresponding `if else` statements in the above code sample, we are still scrolling with our eyes and maintaining state in our brain. Even though, this is probably something that we can overcome locally, by creating the function above, we have forced the readers of our code to use unecessary brain power on parsing our function logic. Which we of course, want to avoid.
+Not only can this kind of code result in a really bad experience for other programmers, who will have to fight to understand the flow of the code. Should the logic in our `if` statements expand, it becomes exponentially more difficult to figure out which statement returns what. It is unfortunately not uncommon to find this kind of implementation in code. I have even bumped into examples of the beginning `if` statement of a correspending `else` statement, was on another page of my monitor. Having to scroll up and  down a page, while trying to figure out what a function does, is not ideal. Even though, we don't have to scroll on our page to see the corresponding `if else` statements in the above code sample, we are still scrolling with our eyes and maintaining state in our brain. Most programmers can quite easily contain this state for the function above, or worse examples. However, we have forced readers of our code, to use unecessary brain power. This may result in reader fatigue, should we repeat this mistake throughout our code. Constantly having to parse code like the above, will make reading the code more and more difficult, which we of course, want to avoid.
 
-So, how do we clean this function? Foruntately, it's actually quite simple. On our first iteration, we will try to  ensure that we are returning an error as soon as we can. Instead of nested the `if else` statements, we want to "push our code to the left". This is handled by returning from our function, as soon as we possibly can.  
+So, how do we clean this function? Foruntately, it's actually quite simple. On our first iteration, we will try to  ensure that we are returning an error as soon as we can. Instead of nested the `if` and `else` statements, we want to "push our code to the left". This is handled by returning from our function, as soon as we possibly can.  
 
 ```go
 func GetItem(extension string) (Item, error) {
@@ -339,7 +335,7 @@ func GetItem(extension string) (Item, error) {
 }
 ```
 
-Once we are done with this, we can split up our function into smaller functions as mentioned previously. Every time that we see the `value, err :=` pattern repeated more than once in a function, this should be an indication, that we should move this logic into it's own function, if possible.
+Once we are done with this, we can split up our function into smaller functions as mentioned previously. A good rule of thumb being:  If the `value, err :=` pattern is repeated more than once in a function, this is an indication that we can split the logic of our code into smaller functions.
 
 ```go
 func GetItem(extension string) (Item, error) {
@@ -372,9 +368,9 @@ func getItemFromCache(reference string) (Item, bool) {
     return itemIface.(Item), true
 }
 ```
-> For production code, one should elaborate on the code even further, by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, the `bool` values will suffice for now.  
+> For production code, one should elaborate on the code even further, by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, the `bool` values will suffice for now. Examples of returning errors more explicitly will be explained in more detail later.
 
-Now, this is many more lines of code than our first iteration. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code details that we aren't interested in and dive deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleaniless of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
+The resulting clean version of our function, has resulted in a lot more lines of code. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code details that we aren't interested in and dive deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleaniless of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
 
 ```go
 func GetItemIfActive(extension string) (Item, error) {
@@ -383,10 +379,6 @@ func GetItemIfActive(extension string) (Item, error) {
 ```
 
 While we are on the topic. There are also a bunch of other side-effects that come along when writing in this style of code. Rather obviously, it makes our code much easier to test. It's much easier to get 100% code coverage on a function that is 4 lines (written by a sane person), than a function which is 400 lines. That's common sense. 
-
-// TODO : what the fuck does this mean?
-
-However, this doesn't necessarily mean that people are willing to refactor their code and thereby make their lives easier. However, I advise, that if you are ever having difficulties with testing your code. Please consider refactoring your functions and trying again. It's most likely not: "because some things are just difficult to test", but rather that really large functions are just always difficult to test.
 
 #### Function Signatures
 
@@ -433,7 +425,7 @@ q, err := ch.QueueDeclare(QueueOptions{
 })
 ```
 
-This solves both the problem of omitting comments or accidentally labelling the variables incorrectly. Of course, we can still confuse properties with the wrong value, but in these cases, it will be much easier to determine where our mistakes lies within the code. The ordering of the properties also do not matter anymore and therefore incorrectly ordering the input values, no longer is a worry. The last added bonus of this technique, is that we can use our Option `struct`, to infer default values of our functions input parameters. When structures in Go are declared, all properties are initialised to their default value. This means, that our `QueueDeclare` option, can actually be invoked in the following way:
+This solves both the problem of omitting comments or accidentally labelling the variables incorrectly. Of course, we can still confuse properties with the wrong value, but in these cases, it will be much easier to determine where our mistakes lies within the code. The ordering of the properties also do not matter anymore and therefore incorrectly ordering the input values, is no longer a worry. The last added bonus of this technique, is that we can use our Option `struct`, to infer default values of our functions input parameters. When structures in Go are declared, all properties are initialised to their default value. This means, that our `QueueDeclare` option, can actually be invoked in the following way:
 
 ```go
 q, err := ch.QueueDeclare(QueueOptions{
@@ -442,8 +434,6 @@ q, err := ch.QueueDeclare(QueueOptions{
 ```
 
 The rest of the values are by initialised to their default `false` values (except for `Arguments`, which, as an interface has a default value of `nil`). Not only are we much safer, we are more clear with our intentions and in this case, we could actually write less code. This is an all around win.
-
-// Maybe this should start a new section about wrapping functions ? 
 
 A last note on this, is that it's not always possible to change the function signatures. As in this case, we don't have control of our `QueueDeclare` function signature, since this is from the RabbitMQ library. It's not our code, we can't change it. However, we can wrap these functions, to suit our purposes:
 
@@ -464,9 +454,15 @@ func (rmqch *RMQChannel) QueueDeclare(opts QueueOptions) (Queue, error) {
 } 
 ```
 
-Basically, we create a new structure `RMQChannel` which contains the `amqp.Channel` type, which has the `QueueDeclare` method. We then create our own version of this method, which essentially just calls the old version of the RabbitMQ library function. Our new method has all the advantages described before and we achieved this, without actually having access to changing any code in the RabbitMQ library. 
+Basically, we create a new structure `RMQChannel` which contains the `amqp.Channel` type, which has the `QueueDeclare` method. We then create our own version of this method, which essentially just calls the old version of the RabbitMQ library function. Our new method has all the advantages described before and we achieved this, without actually having access to changing any code in the RabbitMQ library.
+
+We will use the idea of wrapping functions to introduce more clean and safe code later when discussing the `interface{}`.
+
+// TODO : Add link?
 
 ### Variable Scope
+// TODO : the sentence below is now out of place.
+
 Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, at least at a higher level, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If this variable is global and mutable, then, by definition, it's value can be changed by any other code in the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. But let's, look at a short example of how even larger scoped (not global) variables can cause problems. This is taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
 
 ```go
@@ -1491,128 +1487,6 @@ Of course, this doesn't come without certain disadvantages. We add a comment a t
 > // Code generated by hashmap.go -Type int64 DO NOT EDIT.
 
 This line, will tell certain IDE's to show a warning, that the file is not to be edited. However, nothing is actually preventing users from editing these files. Typically though, code generation is used along with a build script tool (such as a Makefile), so that all generated files are re-generated on build. This will, hopefully, prevent any users from making unwanted changes to the generated code. Of course, this also means that there is no room for tweaking our generated code type by type, but I feel this to be more of an advantage, than anything.
-
-### Balancing Performance with Cleanliness
-> TODO: I'm still not quite sure where to place this in the document
-
-Everything comes with a price. Much like you *can't please all of the people all of the time*, you can't always have all your come code be 100% clean. In certain scenarios where you're main goal is to ensure the absolute most performant setup possible, it won't be possible to write the cleanest code. With everything else in life, comprimises are unavoidable and sometimes going against common best-practice can be a necessity. This is also absolutely fine, as long as we understand why the compromise was made. 
-
-Of course, if your main goal is to write top-performant applications. You're best bet, probably isn't golang. Golang is definitely a good choice within performance, but we shouldn't kid ourselves into believing that it can compete with the likes of C/C++ (or even Rust). That being said, it doesn't mean that we should all thoughts on creating performant code out of the window. This section will look at some concepts of ensuring clean code, while still ensuring a minimum loss of performance.
-
-### Immutability - (Variable Scope Continued)
-Previously, we spoke about variable scope and how we should try to keep our variables immutable, as best possible. This is to avoid managing state, which is an immensely difficult part of programming and also to avoid confusion, when reading code. If state is changed in the flow of code, it can become extremely difficult to read and remember the current value of that state, making the code harder to debug. This becomes an even bigger problem when we start introducing concurrency into the picture. Functional programming languages pride themselves on being 100% concurrency safe, and rightly so! In functional programming all variables are immutable (at least to a certain extent). With this in mind, we can now guarantee that our code will never suffer from a race condition, as we will never mutate already allocated memory. That's neat!
-
-Now, while rather controversial to mention in the golang language community. Golang, performance-wise, really benefits from borrowing a functional style. The performance bottleneck for golang, is the garbage collector. In most cases, this is why C/C++ and Rust outperform golang. Solving certain problems, however, where the computation is very reliant on fast memory allocation, golang performs ***horribly***. As an example of this (from: [The Computer Language Benchamrks Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/performance/binarytrees.html)), Rust is almost 8 times faster than go at creating binary trees. Even more insulting, there are Nodejs implementations that are faster than the fastest golang implementation. 
-
-The first time I heard about this, I actually became very confused and honsetly was a little set back by the fact that Nodejs was outperforming golang. Let's not think about this too much right now, because honestly, there is not much we *can* do about it. Instead, let's just agree that it's extremely unlikely that you will need to create performant binary trees in your day-to-day, so everything is probably going to be fine. The more important lesson we can learn from this, is that heap allocations should be avoided in golang code, if we want to keep it performant.
-
-> WARNING - NOTE: I need to explain this in a much better way.
-
-So, how do we avoid making heap allocations? How do we help the garbage collector as much as possible? While there are many different techniques of doing so, the easiest way to do this, is by writing immutable code. Let's take a look at a simple "FizzBuzz" implementation:
-
-```go
-func devnull(v ...interface{}) {
-	// don't print
-}
-
-func BenchmarkMutable(b *testing.B) {
-	buf := &bytes.Buffer{}
-	for i := 1; i < b.N; i++ {
-		buf.Reset()
-
-		if i%3 == 0 {
-			buf.WriteString("Fizz")
-		}
-
-		if i%5 == 0 {
-			buf.WriteString("Buzz")
-		}
-
-		if buf.String() == "" {
-			devnull(i)
-		} else {
-			devnull(buf.String())
-		}
-	}
-}
-```
-
-This is a very simple implementation of the FizzBuzz exercise. On every benchmark iteration, we are checking if the checking number is divisible by 3 or 5. If it's divisible by 3, we will add "Fizz" to our buffer and if divisible by 5, we will add "Buzz" to the buffer. Of course, if both are true, we will end with a "FizzBuzz" and if none are true, we will just return the number itself as a string. 
-
-This isn't necessarily a bad solution. It's simple and it does the job. The benchmark score is also fine:
-
-```
-BenchmarkMutable-4   	30000000	        38.4 ns/op	      14 B/op	       1 allocs/op
-```
-
-
-
-Hey look it's a buffer implementation, and it get's worse, becasue the buf is a "global" variable, oh no! If we put the buf inside the for loop though, performance is absolutely terrible. Oh no ! What should we do? The allocation is tearing me apart, Lisa.
-
-```go
-func BenchmarkImmutable(b *testing.B) {
-	for i := 1; i < b.N; i++ {
-		devnull(
-			NewFizzBuzz(i).
-				AddIfDivisbleBy("Fizz", 3).
-				AddIfDivisbleBy("Buzz", 5).
-				Result(),
-		)
-	}
-}
-
-type FizzBuzz struct {
-	result string
-	number int
-}
-
-func NewFizzBuzz(n int) FizzBuzz {
-	return FizzBuzz{
-		number: n,
-	}
-}
-
-func (fb FizzBuzz) AddIfDivisbleBy(text string, divisor int) FizzBuzz {
-	if fb.number%divisor == 0 {
-		return FizzBuzz{result: fb.result + text, number: fb.number}
-	}
-	return fb
-}
-
-func (fb FizzBuzz) Result() interface{} {
-	if fb.result == "" {
-		return fb.number
-	}
-	return fb.result
-}
-```
-
-Holy moly dude, that's the most complicated implementation of FizzBuzz I have ever seen in my life, that is some weird shit dude. But wow, 0 allocations.
-
-```go
-func BenchmarkThatsSoMutable(b *testing.B) {
-	for i := 1; i < b.N; i++ {
-		result := ""
-		if i%3 == 0 {
-			result += "Fizz"
-		}
-		if i%5 == 0 {
-			result += "Buzz"
-		}
-		if result != "" {
-			devnull(i)
-		} else {
-			devnull(result)
-		}
-	}
-}
-```
-
-> NOTE: FizzBuzz implementation taken from article by Grayson Koonce, Engineering Manager at Uber: https://graysonkoonce.com/fizzbuzz-in-golang/
-
-This solution is by no means awful and actually does quite well in our benchmark... However, there simply must be something wrong with these benchmarks.... I mean ffs... `result := ""` must surely be an allocation? Or is this all fucked, because it is put on the stack??? Wtf is going on here?
-
-`TODO: don't have the time right now to finish this section. So I will just copy paste the code here, without any description`
 
 ## Index
 
