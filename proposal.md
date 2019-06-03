@@ -1,7 +1,5 @@
 ---
 TODO:
-- Using short-lived channels for returning results for a goroutine
-	- This should be added by 
 - create a section on wrapping functions as a method of loosely coupling your code with one another, rather than making direct changes to your logic.
 ---
 
@@ -62,6 +60,9 @@ The motivation behind writing this document, is to create a resource (and eventu
 The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shapre or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
 
 This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
+
+##### A short word on `gofmt`
+I would like to take a few sentences to make my stance on `gofmt` very clear. There are extremely many things that I disagree with, when it comes to `gofmt`. I prefer snake case over camel case, I quite like my constant variables to be upper case and I also have many opinions on bracket placement. *That being said*: `gofmt` is what enables us to have a common standard for writing Go code. All Go code, will look somewhat similar and it ensures that no Go code becomes too exoteric. I think that this is overall extremely positive. I appreciate immensely, that all Go programmers are somewhat restricted to write similar code, despite being very unhappy with some of the formatting rules. In my opinion, I value homogenous code more than expressive freedom.
 
 ## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
