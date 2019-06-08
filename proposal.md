@@ -707,7 +707,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if we wish to change this error message to something else at another point, our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse would be, if a client used our package to write this code. Their software would inexplicably break all of a sudden after a package update, should we choose to change the message of the returnign error. This is quite obviously something that we want to avoid. Fortunately, this fix is very simple. 
+This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if  the error message value changes, our code breaks (softly). Our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse would be, if a client used our package to write this code. Their software would inexplicably break all of a sudden after a package update, should we choose to change the message of the returnig error. This is quite obviously something that we want to avoid. Fortunately, the fix is very simple. 
 
 ```go
 package clean
@@ -737,7 +737,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := clean.GetItem("123")
     if err != nil {
         if err == clean.ErrItemNotFound {
-            <(w, err.Error(), http.StatusNotFound)
+           http.Error(w, err.Error(), http.StatusNotFound)
 	        return
         }
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -749,15 +749,16 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 
 This feels much nicer and is also much safer. Some would even say that it's easier to read as well. In the case of a more verbose error message, it certainly would be preferable for a developer to simply read `ErrItemNotFound` rather than a novel on why a certain error has been returned.
 
-This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. Again, this is more foolproof for future development and thereby also makes the code more maintainable. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
+This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
 
-Returning default `Null` values like the previous examples, can also be more safe, in certain caes. As an example, a user of our package could forget to check for errors and end up initialising an empty struct containing a default value of `nil`. When attempting to access this `nil` value later in the code, this could cause a panic in thier code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value appraoch, we now only have to change our code in a single place:
+Returning default `Null` values like the previous examples, can also be more safe, in certain caes. As an example, a user of our package could forget to check for errors and end up initialising a variable, pointing to an empty struct containing a default value of `nil` as one or more property values. When attempting to access this `nil` value later in the code, this could cause a panic in thier code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value appraoch, we now only have to change our code in a single place:
 
 ```go
 var NullItem = Item{
     itemMap: map[string]Item{},
 }
 ```
+> NOTE: In many scenarios, invoking the panic will actually be preferable. To indicate that there is an error check missing.
 
 > NOTE: Every interface property in golang, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
 
@@ -806,7 +807,7 @@ func (err *errDetails) Type() error {
 }
 ```
 
-This new data structure still works as our standard error struct. We can still compare it to `nil` since it's an interface implementation and we can still call `.Error()` on it, so it won't break any already existing implementations. However, the advantage is that we can now check our error type as we could previously, despite our error now containing the *dynamic* details:
+This new data structure still works as our standard error. We can still compare it to `nil` since it's an interface implementation and we can still call `.Error()` on it, so it won't break any already existing implementations. However, the advantage is that we can now check our error type as we could previously, despite our error now containing the *dynamic* details:
 
 ```go
 func (store *Store) GetItem(id string) (Item, error) {
@@ -840,6 +841,9 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 ```
 
 #### Returning Other Values
+
+// TODO: this section must be refactored. It's awful
+
 This section isn't going dive tremendously into the idea of returning values and how to ensure clean code in doing so. However, it's a topic will act as a nice lead-up to the next section of this article. As mentioned many times before, a big part of the *why* of writing clean code, is to ensure readability. Readability is obviously something that is somewhat subjective, however, despite this the following seems to be indisputable. In order to maximize readability, the code we write, should look similar, if the functionality is similar. This makes it easy to identify the functionality of functions and thereby enabling developers to read / skim code efficiently. 
 
 Take a look at the ending result from [Cleaning Functions](#Cleaning_Functions). These smaller functions all look and behave the same, in turn, making them very easily parseable. 
@@ -890,7 +894,7 @@ return item, ok
 
 However, this is not apparent at first glance and the style of the code is not congruent with the rest of our functions / code. We are also making mutable variables, which will definitely open up for possible shadow variable issues further down the line. 
 
-The first time I saw that this was possible to do in golang, I really thought that this was a super neat little trick. However, now I am not particularly excited about the idea of returning values in this way. When returning values, we should make sure that the receiver of this value, is safe when receiving the value. As of now, we are returning a value of type `Item`. What does this default to? Presumably, it is an empty initialised value: `Item{}`. This is not too bad. However, if we are working with something less concrete, such as an `interface` or a `[]byte`, it is entirely possible that we end up returning `nil` or even worse, return a variable of some weird format.
+The first time I saw that this was possible to do in golang, I really thought that this was a super neat little trick. However, now I am not particularly excited about the idea of returning values in this way. When returning values, we should make sure that the receiver of this value, is safe when receiving the value. As of now, we are returning a value of type `Item`. What does this default to? Presumably, it is an empty initialised value: `Item{}`. This is not too bad. However, if we are working with something less concrete, such as an `interface` or a `slice`, it is entirely possible that we end up returning `nil` or even worse, return a variable of some weird format.
 
 This is why, as you might have noticed, that in all the code examples, when an error has ocurred an `EmptyItem` has been returned. The essence of this, is to make clear that we are returning an empty variable together with our error. If we omit this, we can get unexpected behaviour, which might end up being very difficult to debug.
 
@@ -1676,3 +1680,4 @@ func (hashmap *HashMap_int64) Delet(key string) {
 	delete(key, hashmap.store)
 }
 ```
+
