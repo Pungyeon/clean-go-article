@@ -932,60 +932,64 @@ The second version may seem 'uglier', but in fact, it is the clean version. The 
 
 ### Nil Values 
 
-// TODO : This doesnt make sense. The nil values are 
-
 A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. Previously, we traversed in explained the troubles `nil` can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to sum up: Things break, when you try to access methods or properties of a `nil` value. In the mentioned section, it was recommended to try an minimise usage of returning a  `nil` value. This way, users of our code, would be less prone to accidentally access `nil` values by a mistake. 
 
-There are other scenarios in which it is common to find `nil` values, which can cause some unecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. 
-
-If accessed, they will cause a panic.
-
-
-
-// TODO : This needs much more explanation
-
-Luckily, there is an easy way to combat this. One method of doing this, is by hiding our concrete struct behind an interface. The concrete type can only be initialised via. functions, which ensure that all possible `nil` values are initialised and we hereby ensure that these values will never be accessed.
+There are other scenarios in which it is common to find `nil` values, which can cause some unecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. If accessed, they will cause a panic. An example of this, can be seen below:
 
 ```go
-type Cache interface {
-    Add(string, string) error
+type App struct {
+	Cache *KVCache
 }
 
-type kvCache struct {
-    cache map[string]string
-}
-
-func (c *kvCache) Add(key, value string) error {
-    ...
-}
-
-func NewKVCache() Cache {
-    return &kvCache{
-        cache map[string]string{},
-    }
-}
-```
-
-The above code works and fixes the immediate issue, ensuring that the `map` in our key value cache, is initialised with our constructor. Since it's a private struct, then there is no way of initialising it directly outside of our package and we can therefore conclude, that the `cache` map property, will never be accessed as a null poitner. However, using this can be quite tedious, as we will have to create both interface and struct methods for every single property that we wish to access. Don't get me wrong, this is a completely legitimate way of writing code, but in some cases, I don't think that it is the most suitable / straightforward solution to solve this issue. 
-
-Instead, we can turn our `KVCache` into a public struct, making it fully accessible outside of package. Instead of hiding the properties behind an interface, we can make the properties which default to `nil` private and create methods for accessing them. These methods can then ensure that these values are not `nil` before returning them.
-
-```go
 type KVCache struct {
-    cache map[string]string
+  mtx sync.RWMutex
+	store map[string]string
 }
 
-func (c *KVCache) Cache() map[string]string {
-	if c.cache == nil {
-		c.cache = map[string]string{}
-	}
-	return c.cache
+func (cache *KVCache) Add(key, value string) {
+  cache.mtx.Lock()
+  defer cache.mtx.Unlock()
+  
+	cache.store[key] = value
 }
 ```
 
-This way, we have still fixed the issue that we started out with, but we are now free to add other non-nil default valued properties to our struct and make them publically accessible. This is nice and saves us the trouble of having to implement a bloated interface, for accessing our various properties. We aren't writing Java, so we want to avoid looking like we enjoy writing getters and setters.
+This code is absolutely fine. However, we are exposed by the fact that our `App` can be initialised incorrectly, without initialising our `Cache` property within. Should the following code be invoked, our application will panic:
 
-This method works for all values default to `nil`: slices, interfaces, maps, channels etc. and is a good way of prioritising safety, without annoying the users of our package, by denying them access to the different properties of our structures.
+```go
+	app := App{}
+	app.Cache.Add("panic", "now")
+```
+
+The `Cache` property, has never been initialised and is therefore a `nil` pointer the `Add` method, is invoked. Running this code will result in a panic, with the following message:
+
+> panic: runtime error: invalid memory address or nil pointer dereference
+
+Instead, we can turn our `Cache` property of our `App` structure into a private property and create a getter-like method, to access the `Cache` property of our `App`. This gives us more control of what we are returning and ensuring that we aren't returning a `nil` value.
+
+```go
+type App struct {
+    cache *KVCache
+}
+
+func (app *App) Cache() *KVCache {
+	if app.cache == nil {
+    app.cache = NewKVCache()
+	}
+	return app.cache
+}
+```
+
+We now ensure that we will never experience returning a `nil` pointer, when trying to access the `Cache` property. Our code, which previously panicked, will now be refactored to the following:
+
+```go
+app := App{}
+app.Cache().Add("panic", "now")
+```
+
+The reason why this is preferable, is that we are ensuring that users of our package aren't worrying about the implementation and whether they are using our package in an unsafe manner. All they need to worry about is writing their own clean code. 
+
+> NOTE: There are other methods to achieve a similar safe outcome, however, I think that this is the most straightforward method of doing this.
 
 ### Pointers in Go
 Pointers in go are rather a large topic. They are a very big part of working with the language, so much so, that it is essentially impossible to write go, without some knowledge of pointers and their workings in go. I will not go into detail, of the inner workings of Pointers in go in this article. Instead, we will focus on their quirks and how to handle them in go.
