@@ -1082,13 +1082,15 @@ The reason why this is *ok*, is that the variable scope, which is defined by who
 
 So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. In Javascript, it is very common to use closures as callbacks, which is typically used in scenarios where upon we want to invoke a function after an asynchronous operation has finished. In Go, we don't really have this issue, or at the very least, we have other, much nicer, ways of solving this issue. Instead, in Golang, we can use closures to solve a different hurdle: The lack of generics. 
 
+// TODO : Possibly use HTTP middleware generics instead of the current example?
+
 Now, don't get too excited. We aren't going to substitute the lack of generics. We are simply going to solve a subset of the lack of generics with the use of closures. Consider the following function signature:
 
 ```go
 func something(closure func(float64) float64) float64 { ... }
 ```
 
-This function takes in a function, which returns a float64 and then returns a float64. This pattern can be particularly useful, for creating a loosely coupled architecture, making it easier to to add functionality, without affecting other parts of the code. An example use case of this, could be that we had a structure, containing some data. Through this structures `Do()` method, we can perform operations on this data. If we know the operation ahead of time, we can approach problem this by placing the logic for handling the different operations, directly in our `Do()` method:
+This function takes another function as input and will return a `float64`. The input function, will take a `float64` as input, and will also return a `float64`.   This pattern can be particularly useful, for creating a loosely coupled architecture, making it easier to to add functionality, without affecting other parts of the code. An example use case of this, could be for a struct containing data, which we want to manipulate in some form. Through this structures `Do()` method, we can perform operations on this data. If we know the operation ahead of time, we can approach problem this by placing the logic for handling the different operations, directly in our `Do()` method:
 
 ```go
 func (datastore *Datastore) Do(operation Operation, data []byte) error {
@@ -1103,7 +1105,7 @@ func (datastore *Datastore) Do(operation Operation, data []byte) error {
 }
 ```
 
-As we can imagine, this function will perform a predetermined operation on the data contained in the `Datastore` struct. However, we can also imagine, that at some point we would want to add more operations. Over a longer period of time, this might end up being quite a lot of different operations, making  our `Do` method bloated and possibly even hard to maintain. It might also be an issue for people wanting to use our `Datastore` object, who don't have access to edit our package code. Keeping in mind, that there are no way of extending structure methods as there is in most OOP languages, this could also become an issue for developers wanting to use our package. 
+As we can imagine, this function will perform a predetermined operation on the data contained in the `Datastore` struct. However, we can also imagine, that at some point we would want to add more operations. Over a longer period of time, this might end up being quite a lot of different operations, making  our `Do` method bloated and possibly even hard to maintain. It might also be an issue for people wanting to use our `Datastore` object, who don't have access to edit our package code. Keeping in mind, that there is no way of extending structure methods as there is in most OOP languages. This could also become an issue for developers wanting to use our package. 
 
 So instead, let's try a different approach, using closures instead:
 
@@ -1160,6 +1162,8 @@ Notice how we have added some of the clutter from the `Do` method signature. The
 In the next section, we will talk about interfaces, but let's take a short moment to talk about the difference between interfaces and closures. The problems that interfaces solve, definitely  overlap with the problems solved by closures.  The implementation of interfaces in Go makes the distinction of when to use one or the other, somewhat difficult at times. Usually, whether an interface or a closure is used, is not really of importance and whichever solves the problem in the simplest manner, is the right choice. Typically, closures will be simpler to implement, if the operation is simple by nature. However, as soon as the logic contained within a closure becomes complex, one should strongly consider using an interface instead.  
 
 // TODO : Still not particularly happy the ending of this chapter, still seems unfinished
+
+// TODO : I think that it would be really nice to show how to do function chaining in this manner, using closures.
 
 Dave Cheney has an excellent write up on this topic, and a talk on the same topic:
 
