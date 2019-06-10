@@ -83,7 +83,6 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
       * [Returning Other Values](#Returning-Other-Values)
     * [Pointers in Go](#Pointers-in-Go)
-    * [Using `goto` in Go](#Using-`goto`-in-Go)
     * [Closures are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The empty `interface{}`](#The-empty-`interface{}`)
@@ -932,7 +931,18 @@ The second version may seem 'uglier', but in fact, it is the clean version. The 
 // TODO: Seems like something is missing here
 
 ### Nil Values 
-A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. A lot of other languages have omitted this from their language, prioritising safety and therefore the equivalent of `nil` is in fact a type, rather than an actual null pointer. The reason for this, is that null pointers can cause a lot of trouble. We explained which troubles they can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to some up: Things break, when you try to access null pointers. 
+
+// TODO : This doesnt make sense. The nil values are 
+
+A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. Previously, we traversed in explained the troubles `nil` can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to sum up: Things break, when you try to access methods or properties of a `nil` value. In the mentioned section, it was recommended to try an minimise usage of returning a  `nil` value. This way, users of our code, would be less prone to accidentally access `nil` values by a mistake. 
+
+There are other scenarios in which it is common to find `nil` values, which can cause some unecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. 
+
+If accessed, they will cause a panic.
+
+
+
+// TODO : This needs much more explanation
 
 Luckily, there is an easy way to combat this. One method of doing this, is by hiding our concrete struct behind an interface. The concrete type can only be initialised via. functions, which ensure that all possible `nil` values are initialised and we hereby ensure that these values will never be accessed.
 
@@ -978,12 +988,12 @@ This way, we have still fixed the issue that we started out with, but we are now
 This method works for all values default to `nil`: slices, interfaces, maps, channels etc. and is a good way of prioritising safety, without annoying the users of our package, by denying them access to the different properties of our structures.
 
 ### Pointers in Go
-Pointers in go are rather a large topic. They are a very big part of working with the language, so much so, that it is essentially impossible to write go, without some knowledge of pointers and their workings in go. Pointers in themselves are a large topic, so I will refrain from explaining them in detail, but rather just explain their quirks and how to handle these quirks in go.
+Pointers in go are rather a large topic. They are a very big part of working with the language, so much so, that it is essentially impossible to write go, without some knowledge of pointers and their workings in go. I will not go into detail, of the inner workings of Pointers in go in this article. Instead, we will focus on their quirks and how to handle them in go.
 
-Pointers add complexity, however, as mentioned, it's almost impossible to avoid them when writing go. Therefore, it is important to understand how to use pointers, without adding unecessary complexity and thereby keeping your codebase clean. Without restraining oneself, the incorrect use of pointers can introduce nasty side-effects, introducing bugs that are particularly difficult to debug. Of course, when sticking the basic principles in the first part of this article, we limit our exposure of introducing this complexity, but pointers are a particular case, which can still undo all of our previous hard work to make our code clean. 
+Pointers add complexity, however, as mentioned, it's almost impossible to avoid them when writing go. Therefore, it is important to understand how to use pointers, without adding unecessary complexity and thereby keeping your codebase clean. Without restraining oneself, the incorrect use of pointers can introduce nasty side-effects, introducing bugs that are particularly difficult to debug. Of course, when sticking to the basic principles of writing clean code, introduced in the first part of this article, we limit our exposure of introducing this complexity, but pointers are a particular case, which can still undo all of our previous hard work, of making our code clean. 
 
 #### Pointer Mutability
-I have already used the word mutability more than once in this article, as a negative. I will keep doing this, in hope that it become indoctrinating in your mind. Mutability is obviously not a clear-cut bad thing and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool, but we should really only ever use it, when it's necessary. Let's have a look at a code example illustrating why:
+I have already used the word mutability more than once in this article, as a negative. Mutability is obviously not a clear-cut bad thing and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool, but we should really only ever use it, when it's necessary. Let's have a look at a code example illustrating why:
 
 ```go
 func (store *UserStore) Insert(user *User) error {
@@ -1009,22 +1019,28 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err, http.StatusBadRequest)
         return
     }
-    if err := store.Insert(user); err != nil {
-        http.Error(w, err, http.StatusInternalServerError)
-        return
+    if err := insertUser(w, user); err != nil {
+      http.Error(w, err, http.StatusInternalServerError)
+      return
     }
-    user.Password = ""
-    if err := json.NewEncoder(w).Encode(user); err != nil {
-        http.Error(w, err, http.StatusInternalServerError)
+}
+
+func insertUser(w http.ResponseWriter, user User) error {
+  	if err := store.Insert(user); err != nil {
+        return err
     }
+  	user.Password = ""
+	  return json.NewEncoder(w).Encode(user)
 }
 ```
 
 Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a json object to our client. This is all quite common practice, typically when returning a user object, where the password has been hashed, we don't want to return the hashed password.
 
-However, this code is horribly flawed. If we check in our user store, see that the change we made to the users password in the http handler function, also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest`, is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
+However, imagine that we are using an in-memory store, based on a `map`, this code will produce some unexpected results. If we check in our user store, see that the change we made to the users password in the http handler function, also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest`, is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
 
-This is a great example of why both mutability and variable scope, can cause some serious issues and bugs, when used incorrectly. The fix for this particular bug, is rather simple:
+This is a great example of why both mutability and variable scope, can cause some serious issues and bugs, when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of our variable. Even more worrying, we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to being a globally available variable. Depending on the variable scope of our store. As demonstrated by the above example, this can lead to disastrous bugs, which are particularly difficult to find and erraticate.
+
+Fortunately, the fix for this bug, is rather simple:
 
 ```go
 func (store *UserStore) Insert(user User) error {
@@ -1048,9 +1064,11 @@ func (store *UserStore) Get(id int64) (*User, error) {
 }
 ```
 
-Again, a very standard very simple implementation of a getter function for our store. However, this is still bad. We are once again expanding the scope of our pointer, which may end up causing unexpected side-effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bad, because it's bound to ensure confusion. Our store should be the only entity enabled to make changes to the values stored there. The easiest fix available for this, is to either return a value of `User` rather than returning a pointer. 
+Again, a very standard very simple implementation of a getter function for our store. However, this is still bad. We are once again expanding the scope of our pointer, which may end up causing unexpected side-effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bad, because it's bound to ensure confusion. Our store should be the only entity enabled to make changes to the values stored there. The easiest fix available for this, is to either return a value of `User` rather than returning a pointer.
 
-Please keep in mind, that there is intrinsically nothing wrong with returning pointers, however, the expanded scope and number of owners of the variables is the important aspect, which makes the previous example a smelly operation. As an example, there is nothing wrong with the following example:
+> NOTE: Should our application use multiple threads, which is often the case. Passing pointers to the same memory location, can also potentially result in a race condition. In other words, we aren't only potentially corrupting our data, we could also cause a panic from a data race.
+
+Please keep in mind, that there is intrinsically nothing wrong with returning pointers, however, the expanded scope and number of owners of the variables is the important aspect. This is what categorises our previous example a smelly operation. This is also why, that common Go constructors are also absolutely fine:
 
 ```go
 func AddName(user *User, name string) {
@@ -1058,26 +1076,7 @@ func AddName(user *User, name string) {
 }
 ```
 
-The reason why this is *ok*, is that the scope, which is defined by whomever invokes the functions, remains the same after the function returns. This combined with the fact, that the ownership is also handled in a more straightforward manner. This functions will have an ownership something like:
-
-```
-ParentFn -> AddName (adds name) -> ParentFn
-```
-
-In other words the ownership is (logically) moved to the `AddName` function as is returned to whichever parent function, when the function returns. In contrast, our store returning pointers looked more like this:
-
-```
-HttpHandler -> store.Insert ->  HttpHandler -> 
-                                store.users ->
-ParentFn    -> store.Get    ->  ParentFn    ->
-```
-
-Rather than having a linear ownership hand over, we have a tree of ownership instead. With many different parts of our applicaton, that can mutate our variable in a potentially global scope.
-
-### Using `goto` in Go
-Just don't
-
-// TODO : Despite wonderful comedic effect, this should probably be elaborated upon
+The reason why this is *ok*, is that the variable scope, which is defined by whomever invokes the functions, remains the same after the function returns. This combined with the face that the ownership of the variable remains unchanged (it stays solely with the function invoker), means that the pointer cannot be manipulated in an unexpected manner.
 
 ### Closures are Function Pointers
 
