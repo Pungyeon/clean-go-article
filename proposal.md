@@ -1180,7 +1180,7 @@ Jon Bodner also has a talk about this topic
 
 ### Interfaces in Go
 
-In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as implementing an interface is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
+In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as interface implementation is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can be difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
 
 There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
 
@@ -1202,9 +1202,9 @@ func NewNullWriter() io.Writer {
 }
 ```
 
-The above function ensures, that the `NullWriter` struct implements the `Writer` interface. If we were to delete the `Write` method for the `NullWriter` we would get a compile error, where we to try and build the solution. This is a good way of ensuring our code behaves in the way that we expect and we can use the compiler as a safety net to ensure that we aren't producing invalid code. 
+The above function ensures, that the `NullWriter` struct implements the `Writer` interface. If we were to delete the `Write` method for the `NullWriter` we would get a compilation error, were we to try and build the solution. This is a good way of ensuring our code behaves in the way that we expect and that we can use the compiler as a safety net to ensure that we aren't producing invalid code. 
 
-There is another way of trying to be more explicit about which interfaces a given struct implements. However, this method is, achieves the opposite of what we wish to achieve. The method being, using embedded interfaces, as a struct property.
+There is another way of trying to be more explicit about which interfaces a given struct implements. However, this method achieves the opposite of what we wish to achieve. The method being, using embedded interfaces, as a struct property.
 
 <center style="font-style: italic">"Wait what?" - Presumably most people</center>
 
@@ -1228,7 +1228,9 @@ type AudioFile struct {
 }
 ```
 
-Above, we are defining a `Metadata` object, which will provide us with property fields that we are likely to use on many different types. This is great and by all means great for improving our code cleanliness. This is mainly, because we can use this, decouple our code and thereby update our Metadata object, without breaking other parts of our code. An example of this, let's create some constructors: 
+Above, we are defining a `Metadata` object, which will provide us with property fields that we are likely to use on many different struct types. The neat thing about using the embedded struct, rather than explicitly defining the properties directly in our struct, is that it has decoupled the `Metadata` fields. Should be choose to update our `Metadata` object, we can change it in a single place. As mentioned earlier, we want to ensure that a change one place in our code, doesn't break other parts of our code. Keeping these properties centralised, will keep it clear to users that a structures with embedded `Metadata` have the same properites. Much like, structures that fulfill interfaces, have the same methods.  
+
+Now, let's look at an example of how we can use a constructor, to further prevent breaking our code, when making changes to our `Metadata` struct:
 
 ```go
 func NewMetadata(user types.User) Metadata {
@@ -1286,7 +1288,7 @@ func NewNullWriter() io.Writer {
     return &NullWriter{}
 }
 ```
-The above code compiles. This is bad. Technically, we are implemnting the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
+The above code compiles. The first time I saw this, I couldn't believe that this was actually compiling. Technically, we are implemnting the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
 
 ```go
 func main() {
@@ -1302,11 +1304,13 @@ As mentioned before, the above code will compile. The `NewNullWriter` returns a 
 
 The explanation being, that an interface method in Go, is essentially a function pointer. In this case, since we are pointing the function of an interface, rather than an actual method implementation, we are trying to invoke a function, which is in actuality a nil pointer. Oops! Personally, I think that this is a massive oversight in the Go compiler. This code **should not** compile... but while this is being fixed (if it ever will be), let's just promise each other, never to implement code in this way. In an attempt to be more clear with our implementation, we have ended up shooting ourselves in the foot and bypassing compiler checks. 
 
-> NOTE: Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. In my opinion, this is just laziness combined with congnitive dissonance. 
+> Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. In my opinion, this is just laziness combined with congnitive dissonance. 
+
+// TODO : The ending of this section feels rush… and the interfaces chapter can be split in two. One about embedded structures and one about using interfaces and input and output parameters
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
-<center style="font-style: italic; margin: 0 100px 0 100px">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
+<center style="font-style: italic; margin: 0 150px 0 150px">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
 
 > FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
@@ -1350,10 +1354,10 @@ func TestFn(t *testing.T) {
 
 > NOTE: there is actually already a null writer implementation built into the ioutil package named `Discard`
 
-When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. This is great and as I mentioned, is a great advantage of go. However, this implementation of interfaces, also comes with a *huge* downside. 
+When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. However, this implementation of interfaces, also comes with a *huge* downside. 
 
 ### The empty `interface{}`
-Unlike other languages, go does not have an implementation for generics. There have been many proposals on how to implement this and will eventually be implemented. However, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
+Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed disatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
 
 But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that golang determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
 
