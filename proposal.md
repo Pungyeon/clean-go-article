@@ -1,55 +1,4 @@
----
-TODO:
-- create a section on wrapping functions as a method of loosely coupling your code with one another, rather than making direct changes to your logic.
----
-
-```go
-// HTTPClientWrapper is a wrapper for the standard http client
-// which ensures that a non 2xx return code is regarded as an error
-type HTTPClientWrapper struct {
-	client *http.Client
-	check  func(status int) bool
-}
-
-// NewHTTPClientWrapper will initialise and return a new http client wrapper
-func NewHTTPClientWrapper(checker func(status int) bool) *HTTPClientWrapper {
-	return &HTTPClientWrapper{
-		check: checker,
-		client: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost: 20,
-			},
-			Timeout: time.Duration(1) * time.Second,
-		},
-	}
-}
-
-// Get will invoke the get function on the wrapped client and check the status
-// to ensure it is a 2xx return code
-func (wrapper *HTTPClientWrapper) Get(url string) (*http.Response, error) {
-	resp, err := wrapper.client.Get(url)
-	if err != nil {
-		return &http.Response{}, err
-	}
-	if !wrapper.check(resp.StatusCode) {
-		return &http.Response{}, fmt.Errorf(
-			"error on sending request to [%s] - returned with status: %s",
-			url, resp.Status)
-	}
-	return resp, err
-}
-
-// Do will invoke the Do function on the wrapped client
-func (wrapper *HTTPClientWrapper) Do(req *http.Request) (*http.Response, error) {
-	return wrapper.client.Do(req)
-}
-```
-
-
-
-
-
-# Clean Golang Code
+# Clean Go Code
 
 ## Preface
 
@@ -62,7 +11,7 @@ The matter of the fact is, as Peter Seibel put it. We decode code and we honestl
 This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
 
 ##### A short word on `gofmt`
-I would like to take a few sentences to make my stance on `gofmt` very clear. There are extremely many things that I disagree with, when it comes to `gofmt`. I prefer snake case over camel case, I quite like my constant variables to be upper case and I also have many opinions on bracket placement. *That being said*: `gofmt` is what enables us to have a common standard for writing Go code. All Go code, will look somewhat similar and it ensures that no Go code becomes too exoteric. I think that this is overall extremely positive. I appreciate immensely, that all Go programmers are somewhat restricted to write similar code, despite being very unhappy with some of the formatting rules. In my opinion, I value homogenous code more than expressive freedom.
+I would like to take a few sentences to make my stance on `gofmt` very clear. There are extremely many things that I disagree with, when it comes to `gofmt`. I prefer snake case over camel case, I quite like my constant variables to be upper case and I also have many opinions on bracket placement. *That being said*: `gofmt` is what enables us to have a common standard for writing Go code. All Go code, will look somewhat similar and it ensures that no Go code becomes too exoteric. I think that this is overall extremely positive. I appreciate immensely, that all Go programmers are somewhat restricted to write similar code, despite being very unhappy with some of the formatting rules. In my opinion, I value homogenous code over complete expressive freedom.
 
 ## Context
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
@@ -73,11 +22,11 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
     	* [Variable Naming](#Variable-Naming)
     * [Cleaning Functions](#Cleaning-Functions)
       * [Function Length](#Function-Length)
-      * [Function Signatures](#Function-Length)
+      * [Function Signatures](#Function-Signatures)
     * [Variable Scope](#Variable-Scope)
     * [Variable Declaration](#Variable-Declaration)
     
-* [Clean Golang](#Clean-Golang)
+* [Clean Go](#Clean-Go)
 		* [Return Values](#Return Values) 
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
@@ -86,10 +35,7 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
     * [Closures are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The empty `interface{}`](#The-empty-`interface{}`)
-* [Go Code Generation](#Go-Code-Generation)
-* [Balancing Performance with Cleanliness](#Balancing-Performance-with-Cleanliness)
-    * Immutability - Variable Scope Continue 
-* [Index](#Index)
+* [Summary](#Summary)
 
 ## Introduction to Clean Code
 
@@ -458,12 +404,10 @@ Basically, we create a new structure `RMQChannel` which contains the `amqp.Chann
 
 We will use the idea of wrapping functions to introduce more clean and safe code later when discussing the `interface{}`.
 
-// TODO : Add link?
+[RabbitMQ Go tutorial](#https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
 
 ### Variable Scope
-// TODO : the sentence below is now out of place.
-
-Another nice side-effect of writing smaller functions. Is that it can typically eliminate using longer lasting mutable variables. Writing code with global variables, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then, by definition, it's value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. This is yet another example of a trivial problem, which is exasterbate, when the codebase expands. Let's, look at a short example of how even larger scoped (not global) variables can cause problems. 
+Now, let's go back one step, back to the idea of writing smaller functions. This has another nice side-effect, which we didn't cover in the previous chapter:  Writing smaller function can typically eliminate using longer lasting mutable variables. Writing code with global variables, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then, by definition, it's value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. This is yet another example of a trivial problem, which is exasterbate, when the codebase expands. Let's, look at a short example of how even larger scoped (not global) variables can cause problems. 
 
 Larger scoped variables, also introduce the issue of variable shadowing as shown int he code taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
 
@@ -663,7 +607,7 @@ Looking at the exampe above, it's clear how this also simplifies the usage of ou
 
 >  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](#https://www.youtube.com/watch?v=kJq81Y7OEx4)
 
-## Clean Golang
+## Clean Go
 
 This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
 
@@ -1084,7 +1028,7 @@ The reason why this is *ok*, is that the variable scope, which is defined by who
 
 ### Closures are Function Pointers
 
-So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. In Javascript, it is very common to use closures as callbacks, which is typically used in scenarios where upon we want to invoke a function after an asynchronous operation has finished. In Go, we don't really have this issue, or at the very least, we have other, much nicer, ways of solving this issue. Instead, in Golang, we can use closures to solve a different hurdle: The lack of generics. 
+So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. In Javascript, it is very common to use closures as callbacks, which is typically used in scenarios where upon we want to invoke a function after an asynchronous operation has finished. In Go, we don't really have this issue, or at the very least, we have other, much nicer, ways of solving this issue. Instead, in Go, we can use closures to solve a different hurdle: The lack of generics. 
 
 // TODO : Possibly use HTTP middleware generics instead of the current example?
 
@@ -1185,7 +1129,6 @@ In general, the go method for handling `interface`'s is quite different from oth
 There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
 
 ```go
-// package io 
 type Writer interface {
 	Write(p []byte) (n int, err error)
 }
@@ -1359,7 +1302,7 @@ When constructing our `Pipe` struct with the `NullWriter` (rather than a differe
 ### The empty `interface{}`
 Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed disatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
 
-But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that golang determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
+But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that Go determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
 
 ```go
 type EmptyInterface interface {}
@@ -1373,7 +1316,7 @@ func Println(v ...interface{}) {
 }
 ```
 
-In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which funnily enough, they 100% will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in golang to implement generic methods. Good examples of this, come from the `json` standard library package:
+In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which we are certain that any type will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in Go to implement generic methods. Good examples of this, come from the `json` standard library package:
 
 ```go
 func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
@@ -1391,9 +1334,11 @@ func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-The reason why this is a good way of using the empty `interface{}`. We are containing all the *messy* code inside our `Decode()` function, so that the developer using this functionality won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, essentially, returning a concrete type. However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a `JSON` string that has nothing to do with our `Item` type, we still won't receive an error. Out `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+All the *less elegant* code, is ocntained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
 
-The problem with this, is that we are leaning towards using golang (a statically typed languagae) as a dynamically typed langauge. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
+However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid son, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+
+The problem with this, is that we are leaning towards using Go (a statically typed languagae) as a dynamically typed langauge. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
 
 ```go
 type HashMap struct {
@@ -1431,264 +1376,57 @@ func SomeFunction(id string) (Item, error) {
 }
 ```
 
-On first glance, this looks fine. However, like mentioned previously. What happens when the code base changes? As of right now, there is nothing limiting us from adding something other than the `Item` type. So what happens when someone starts adding other types into our HashMap? Our function now might return an error. This might even be a small change like someone else in the code base wanting to store a pointer `*Item` instead of an `Item`. Worst of all, this won't even be caught by our tests. We are simply checking that our function is working as expected and it does. The developer inserting the `*Item`, should of course add tests that will fail, but depending on the complexity of the system, might actually have a difficult time debugging why this test is failing. 
+On first glance, this looks fine. However, like mentioned previously. However, we will start getting into trouble, should we add different types in our store, which as of now, is not prevented. There is nothing limiting us from adding something other than the `Item` type. So what happens when someone starts adding other types into our HashMap? Our function now might return an error. This might even be a small change like someone else in the code base wanting to store a pointer `*Item` instead of an `Item`. Worst of all, this might not even be caught by our tests. Depending on the complexity of the system, this might introduce some bugs particularly difficult to debug. 
 
-This type of code, should never reach production. The matter of the fact is, that golang does not support generics as of now and as golang programmers, we should accept this. If we want to use generics, then we should use a different language which does support generics, rather than trying hack our way out of this. This is my biggest gripe with golang. A language that is otherwise quite good at forcing their idioms on their users, it baffles me that the use of `interface{}` is not more restricted. If anything, I feel that the return of an `interface{}` type should flag for a warning. I actually believe that it's that bad of a practice. If anything, it's much worse practice than using snake case instead of came case. 
+This type of code, should never reach production. The matter of the fact is, that Go does not support generics as of now and as Go programmers, we should accept this. If we want to use generics, then we should use a different language which does support generics, rather than trying hack our way out of this. 
 
-So, how do we prevent this code from reaching production? Well, let's borrow a principle from the Rust language. Generics are fully supported by Rust, which is actually quite strange, considering the language architecture. However, upon further insight, the way that Rust handles this, is very simple and very straight forward. Rust does not do runtime reflection, instead Rust does compiletime reflection. On compile, Rust will map out all the different possible variations of a generic function and compile a variant of this function, using concrete types rather than generic types. Referenced from: [this article](https://gist.github.com/Kimundi/8391398).
-
-So, in other words rust is generating our functions for us. If we stick to golang code, that would be the equivalent of having, the following code:
+So, how do we prevent this code from reaching production? The simples solution for our problem, is basically to just write the functions with concrete types, instead of using `interface{}` values. Of course, this is not always the best approach, as there might be some functionality within the package which is not trivial to implement ourselves. Therefore, it might be a better approach to create wrappers, which expose the functionality we need, but still ensure type safety:
 
 ```go
-func SomeFunction(value interface{}) interface{} { ... }
+type ItemCache struct {
+  kv tinykv.KV
+} 
 
-func main() {
-    SomeFunction(42)
-    SomeFunction("hello there")
+func (cache *ItemCache) Get(id string) (Item, error) {
+  value, ok := cache.kv.Get(id)
+  if !ok {
+    return EmptyItem, ErrItemNotFound
+  }
+  return interfaceToItem(value)
+}
+
+func interfaceToItem(v interface{}) (Item, error) {
+  item, ok := v.(Item)
+  if !ok {
+    return EmptyItem, ErrCouldNotCastItem
+  }
+  return item, nil
+}
+
+func (cache *ItemCache) Put(id string, item Item) error {
+  return cache.kv.Put(id, item)
 }
 ```
 
-Which would generate the following code: 
+> NOTE: Implementations of other functionalities of the tinykv.KV cache has been left out for the purpose of brevity.
 
-```go
-func SomeFunction_Int(value int) int { ... }
-func SomeFunction_String(value string) string { ... }
-```
+Creating the wrapper above, will now ensure that we are using the actual types and that we are no longer passing in `interface{}` types. It is therefore no longer possible to accidentally populate our store with a wrong value type and we have contained our casting of types, as much as possible. This is a very straight forward way of solving our issue, though somewhat manual.
 
-Unfortunately, there is no way in golang to directly translate this. However, we can actually get very very close to producing something similar with go code generation. 
+## Summary
 
-### Go Code Generation
-Let me start out by saying, that go code generation is nothing fancy. It really, really isn't. At it's most basic, it's simply just templatling (much like HandleBars.js in JavaScript and Jinja in Python). However, it works really well, especially when it comes to writing generic code, that we don't want to write over and over again. Keep in mind, that it doesn't solve all of our problems and there are definitely situations in which actual generic lanauge support would be preferred. However, it is still greatly preferred to using empty `interface{}` 
+First of all, thank you for making it all the way through the article. I hope that it has given some insight into what clean code is, as well as how it will help ensure maintanability, readability and stability in your code base. To sum up all the topics covered:
 
-The following shows some basic go code generation, which will be able to create very simple, but thread-safe, HashMap for primitive types. This is an example of how to do this, and should give enough inspiration as how to expand on the example and create more elaborate code generation templates.
+**Functions** - Naming of functions should become more specific, the smaller the scope of the function. Ensure that all functions are single purpose. A good measure, being to limit your function length to 5-8 lines and only takes 2-3 input arguments.
 
-Our project has the following structure:
+**Variables** - Naming of variables should become less specific the smaller the scope, and keep the scope of your variables to a minimum. Also, keep the mutability of your variables to a minimum and be more and more aware of this as their scope grows.
 
-```
-.
-|-- generate
-|   `-- hashmap.go
-|-- main.go
-```
+**Return Values** - Concrete types should be returned whenever they can. Make it as hard as possible for users of your package to create mistakes and as easy for them to understand the values returned by your functions
 
-The `hashmap.go` file consists of a hashmap template and some logic, which will iterate over command line arguments to generate different types specified by the arguments. From the root of our project, we can run the following command:
+**Pointers** - Use pointers with caution and limit scope and mutability to an absolute minimum. Garbage collection only assists with memory management, it does not assist with all the other complexities associated with pointers.
 
-> go run generate/hashmap.go int64 string uint16
+**Interfaces** - Use interfaces as much as possible to loosen the coupling of your code. Contain any code using the empty `interface{}` as much as possible and prevent it being exposed. 
 
-This will generate files which implement a `HashMap` type for `int64` `string` and `uint16`. So the project now looks like the following:
+Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestable. We help everyone involved in the project by establishing a flexable code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
 
-```
-.
-|-- generate
-|   `-- main.go
-|-- hashmap
-|   |-- hashmap_int64.go
-|   |-- hashmap_string.go
-|   `-- hashmap_uint16.go
-|-- main.go
-```
-
-> NOTE: The full code can be found in the index of this document
-
-We can now use these hashmap types in the rest of our codebase. These HashMaps are now no longer using `interface{}` but instead specifying concrete types for both input and output. As a short example, our get function now looks like this: 
-
-```go
-func (hashmap *HashMap_int64) get(key string) (int64, error) {
-	value, ok := hashmap.store[key]
-	if !ok {
-		return Emptyint64, Errint64NotFoundInHashMap
-	}
-	return value
-}
-```
-
-If we think about what was mentioned in the previous chapter, we can see why this is advantage for us. We are no longer having to do any type casting and we can be 100% sure that our functions are returning the correct concrete type. We can also be sure, that if breaking changes are introduced by changes the generated code, we will get compile time or test errors immediately. Not only does this make it easier to maintain our codebase, but it's also easier to understand the codebase and the effects of changing the codebase might have.
-
-Of course, this doesn't come without certain disadvantages. We add a comment a top of every generated file:
-
-> // Code generated by hashmap.go -Type int64 DO NOT EDIT.
-
-This line, will tell certain IDE's to show a warning, that the file is not to be edited. However, nothing is actually preventing users from editing these files. Typically though, code generation is used along with a build script tool (such as a Makefile), so that all generated files are re-generated on build. This will, hopefully, prevent any users from making unwanted changes to the generated code. Of course, this also means that there is no room for tweaking our generated code type by type, but I feel this to be more of an advantage, than anything.
-
-## Index
-
-### Generated Code
-#### generate/hashmap.go
-```go
-package main
-
-import (
-	"bytes"
-	"io/ioutil"
-	"os"
-	"path"
-	"strings"
-	"text/template"
-)
-
-type genValues struct {
-	Type string
-}
-
-func main() {
-	if err := clean(); err != nil {
-		panic(err)
-	}
-
-	if err := generate(os.Args[1:]); err != nil {
-		panic(err)
-	}
-}
-
-func clean() error {
-	if err := os.RemoveAll("hashmap"); err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-	}
-	return os.Mkdir("hashmap", 0755)
-}
-
-func generate(args []string) error {
-	tmpl, err := template.New("hashmap").Parse(hashmap)
-	if err != nil {
-		return err
-	}
-	for _, arg := range args {
-		if err := generateHashMap(arg, tmpl); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func generateHashMap(arg string, tmpl *template.Template) error {
-	buf := &bytes.Buffer{}
-	if err := tmpl.Execute(buf, genValues{Type: arg}); err != nil {
-		return err
-	}
-	return ioutil.WriteFile(createFilename(arg), buf.Bytes(), 0755)
-}
-
-func createFilename(arg string) string {
-	return path.Join(
-		"hashmap",
-		"hashmap_"+strings.ToLower(arg)+".go",
-	)
-}
-
-var hashmap = `// Code generated by hashmap.go -Type {{.Type}} DO NOT EDIT.
-
-package hashmap
-
-import (
-	"errors"
-	"sync"
-)
-
-var (
-	Empty{{.Type}} = {{.Type}}
-
-	Err{{.Type}}NotFoundInHashMap = errors.New("{{.Type}} was not found in hash map")
-)
-
-type HashMap_{{.Type}} struct {
-	store map[string]{{.Type}}
-	mtx sync.RWMutex
-}
-
-func NewHashMap_{{.Type}}() *HashMap_{{.Type}} {
-	return &HashMap_{{.Type}}{
-		store: map[string]{{.Type}}{},
-	}
-}
-
-func (hashmap *HashMap_{{.Type}}) Get(key string) ({{.Type}}, error) {
-	hashmap.mtx.RLock()
-	defer hashmap.mtx.RUnlock()
-
-	return hashmap.get(key)
-}
-
-func (hashmap *HashMap_{{.Type}}) get(key string) ({{.Type}}, error) {
-	value, ok := hashmap.store[key]
-	if !ok {
-		return Empty{{.Type}}, Err{{.Type}}NotFoundInHashMap
-	}
-	return value
-}
-
-func (hashmap *HashMap_{{.Type}}) Insert(key string, value {{.Type}}) {
-	hashmap.mtx.Lock()
-	defer hashmap.mtx.Unlock()
-
-	hashmap.store[key] = value
-}
-
-func (hashmap *HashMap_{{.Type}}) Delet(key string) {
-	hashmap.mtx.Lock()
-	defer hashmap.mtx.Unlock()
-
-	delete(key, hashmap.store)
-}
-`
-```
-
-#### hashmap/hashmap_int64.go
-```go
-// Code generated by hashmap.go -Type int64 DO NOT EDIT.
-
-package hashmap
-
-import (
-	"errors"
-	"sync"
-)
-
-var (
-	Emptyint64 = int64
-
-	Errint64NotFoundInHashMap = errors.New("int64 was not found in hash map")
-)
-
-type HashMap_int64 struct {
-	store map[string]int64
-	mtx sync.RWMutex
-}
-
-func NewHashMap_int64() *HashMap_int64 {
-	return &HashMap_int64{
-		store: map[string]int64{},
-	}
-}
-
-func (hashmap *HashMap_int64) Get(key string) (int64, error) {
-	hashmap.mtx.RLock()
-	defer hashmap.mtx.RUnlock()
-
-	return hashmap.get(key)
-}
-
-func (hashmap *HashMap_int64) get(key string) (int64, error) {
-	value, ok := hashmap.store[key]
-	if !ok {
-		return Emptyint64, Errint64NotFoundInHashMap
-	}
-	return value
-}
-
-func (hashmap *HashMap_int64) Insert(key string, value int64) {
-	hashmap.mtx.Lock()
-	defer hashmap.mtx.Unlock()
-
-	hashmap.store[key] = value
-}
-
-func (hashmap *HashMap_int64) Delet(key string) {
-	hashmap.mtx.Lock()
-	defer hashmap.mtx.Unlock()
-
-	delete(key, hashmap.store)
-}
-```
+I therefore hope, that you will join the discussion to help what we, the Go community, define as clean code. Let's establish a common ground, so that we improve software. Not only for ourselves, but the sake of everyone.
 
