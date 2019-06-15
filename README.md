@@ -495,8 +495,6 @@ func main() {
 
 ### Variable Declaration 
 
-// TODO : I'm not sure this is all that great of a chapter. The *bad* example isn't particularly expressive of the actual issue which we are trying to display
-
 Other than avoiding variable scope and mutability, we can also improve readability but keeping our variable declaration close to the logic. In C programming, it's common to see the following method for declaring variables:
 
 ```go
@@ -535,7 +533,7 @@ func main() {
 }
 ```
 
-However, we can do even better than this, by invoking the function directly on declaration. 
+However, we can do even better than this, by invoking the function directly on declaration. This makes it much clearer, that the function logic is associated with the declared variable, which is not as clear in the previous example.
 
 ```go
 func main() {
@@ -551,7 +549,7 @@ func main() {
 }
 ```
 
-And coming full circle, we can omit the anonymous function and make it a named function instead:
+And coming full circle, we can move the anonymous function, to make it a named function instead:
 
 ```go
 func main() {
@@ -569,7 +567,7 @@ func NewSenderChannel() chan Item {
 }
 ```
 
-Just like in the previous section, we are now declaring our function and tying it with it's logic, immediately. This makes it easier to traverse code and understand the responsibility of each variable.
+It is still clear that we are declaring a variable and the logic, and the logic associated with the returned channel. Unlike, the first example. This makes it easier to traverse code and understand the responsibility of each variable.
 
 Of course, this doesn't actually limit us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means, that we will have to restrain ourselves from mutating this variable at a later point in the code.
 
@@ -1156,8 +1154,6 @@ As mentioned before, the above code will compile. The `NewNullWriter` returns a 
 The explanation being, that an interface method in Go, is essentially a function pointer. In this case, since we are pointing the function of an interface, rather than an actual method implementation, we are trying to invoke a function, which is in actuality a nil pointer. Oops! Personally, I think that this is a massive oversight in the Go compiler. This code **should not** compile... but while this is being fixed (if it ever will be), let's just promise each other, never to implement code in this way. In an attempt to be more clear with our implementation, we have ended up shooting ourselves in the foot and bypassing compiler checks. 
 
 > Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. In my opinion, this is just laziness combined with congnitive dissonance. 
-
-// TODO : The ending of this section feels rush… and the interfaces chapter can be split in two. One about embedded structures and one about using interfaces and input and output parameters
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
