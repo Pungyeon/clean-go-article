@@ -30,7 +30,6 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
 		* [Return Values](#Return Values) 
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
-      * [Returning Other Values](#Returning-Other-Values)
     * [Pointers in Go](#Pointers-in-Go)
     * [Closures are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
@@ -783,100 +782,9 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-#### Returning Other Values
-
-// TODO: this section must be refactored. It's awful
-
-This section isn't going dive tremendously into the idea of returning values and how to ensure clean code in doing so. However, it's a topic will act as a nice lead-up to the next section of this article. As mentioned many times before, a big part of the *why* of writing clean code, is to ensure readability. Readability is obviously something that is somewhat subjective, however, despite this the following seems to be indisputable. In order to maximize readability, the code we write, should look similar, if the functionality is similar. This makes it easy to identify the functionality of functions and thereby enabling developers to read / skim code efficiently. 
-
-Take a look at the ending result from [Cleaning Functions](#Cleaning_Functions). These smaller functions all look and behave the same, in turn, making them very easily parseable. 
-
-```go
-func getItemByReference(extension string) (string, bool) {
-    refIface, ok := db.ReferenceCache.Get(extension)
-    if !ok {
-        return EmptyItem, false
-    }
-    return refIface.(string)
-}
-
-func getActiveItemByReference(reference string) (Item, bool) {
-    item, ok := getItemByReference(reference)
-    if !item.Active || !ok {
-        return EmptyItem, false
-    }
-    return item, true
-}
-```
-
-Now, let's change the code a little and throw a curve ball, for absolutely no reason:
-
-```go
-func getItemByReference(extension string) (string, bool) {
-    refIface, ok := db.ReferenceCache.Get(extension)
-    if !ok {
-        return EmptyItem, false
-    }
-    return refIface.(string)
-}
-
-func getActiveItemByReference(reference string) (item Item, ok bool) {
-    item, ok = getItemByReference(reference)
-    if !item.Active || !ok {
-        return
-    }
-    return
-}
-```
-
-We haven't changed the code logic, much. The only difference is that we are initialising the variables `item` and `ok`, in the function return signature. The `return` statement is now equivalent to:
-
-```go
-return item, ok
-```
-
-However, this is not apparent at first glance and the style of the code is not congruent with the rest of our functions / code. We are also making mutable variables, which will definitely open up for possible shadow variable issues further down the line. 
-
-The first time I saw that this was possible to do in golang, I really thought that this was a super neat little trick. However, now I am not particularly excited about the idea of returning values in this way. When returning values, we should make sure that the receiver of this value, is safe when receiving the value. As of now, we are returning a value of type `Item`. What does this default to? Presumably, it is an empty initialised value: `Item{}`. This is not too bad. However, if we are working with something less concrete, such as an `interface` or a `slice`, it is entirely possible that we end up returning `nil` or even worse, return a variable of some weird format.
-
-This is why, as you might have noticed, that in all the code examples, when an error has ocurred an `EmptyItem` has been returned. The essence of this, is to make clear that we are returning an empty variable together with our error. If we omit this, we can get unexpected behaviour, which might end up being very difficult to debug.
-
-The code above, actually presents us with this exact issue. In our original clean function, the if either of the boolean operators `!item.Active || !ok` were true, we would return a "ok = false" response. The invoker of the function could check that the result returned was bad / not ok and could then handle this. However, the dirty function doesn't actually mirror this behaviour. If `item.Active == true`, we are now actually returning "ok = true" and therefore, instead of returning an error-like value, we are returning a inactive item, which wasn't the intention of the function. 
-
-If you noticed that we introduced this bug. Well done! However, as before, please keep in mind that this is very simple code and on a larger scale, these kind of errors could be very difficult to catch. That being said, even on a smaller scale, these errors can be very difficult to catch. 
-
-It is my opinion, that you should avoid using this golang functionality. It's very rarely benificial. That being said, there are certain scenarios where it gives a slight benefit to the developer, it rarely justifies the introduced complexity this change brings with it. 
-
-A very common usage of this golang technique, is together with unmarshalling functions or database calls:
-
-```go
-func NewItemFromJSON() (item Item, err error) {
-    if err = json.Unmarshal(&item); err != nil {
-        return
-    }
-    return 
-}
-```
-
-This is of course, instead of using the following logic:
-
-```go
-func NewItemFromJSON() (Item, error) {
-    var item Item
-    if err = json.Unmarshal(&item); err != nil {
-        return EmptyItem, err
-    }
-    return item, nil
-}
-```
-
-The second version may seem 'uglier', but in fact, it is the clean version. The biggest problem with the first function, is that it is returning the item, which is being mutated by the `json.Unmarshal` function. If an error occurs, we have no idea what the state of this variable is. The fact that we are sending a mutated version of our variable back, could lead to some unexpected results. We want to stay as far away from introducing undefined behaviour as we possibly can and therefore the second option is much preferred.
-
-// TODO: Seems like something is missing here
-
 ### Nil Values 
 
-A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. Previously, we traversed in explained the troubles `nil` can cause in the sections [Returning Defined Errors](#Returning-Defined-Errors) and [Returning Other Value](#Returning-Other-Values), but to sum up: Things break, when you try to access methods or properties of a `nil` value. In the mentioned section, it was recommended to try an minimise usage of returning a  `nil` value. This way, users of our code, would be less prone to accidentally access `nil` values by a mistake. 
+A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. Previously, we traversed in explained the troubles `nil` can cause, but to sum up: Things break, when you try to access methods or properties of a `nil` value. In the mentioned section, it was recommended to try an minimise usage of returning a  `nil` value. This way, users of our code, would be less prone to accidentally access `nil` values by a mistake. 
 
 There are other scenarios in which it is common to find `nil` values, which can cause some unecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. If accessed, they will cause a panic. An example of this, can be seen below:
 
