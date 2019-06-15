@@ -936,8 +936,6 @@ The reason why this is *ok*, is that the variable scope, which is defined by who
 
 So, before we go to the next topic of using interfaces in Go. I would like to introduce the commonly overseen alternative, which is what C programmers know as 'function pointers' and most other programmers refer to as 'closures'. Closure are quite simple. They are an input parameter for a function, which act like any other parameter, except for the fact that they are a function. In Javascript, it is very common to use closures as callbacks, which is typically used in scenarios where upon we want to invoke a function after an asynchronous operation has finished. In Go, we don't really have this issue, or at the very least, we have other, much nicer, ways of solving this issue. Instead, in Go, we can use closures to solve a different hurdle: The lack of generics. 
 
-// TODO : Possibly use HTTP middleware generics instead of the current example?
-
 Now, don't get too excited. We aren't going to substitute the lack of generics. We are simply going to solve a subset of the lack of generics with the use of closures. Consider the following function signature:
 
 ```go
@@ -1015,10 +1013,6 @@ Notice how we have added some of the clutter from the `Do` method signature. The
 
 In the next section, we will talk about interfaces, but let's take a short moment to talk about the difference between interfaces and closures. The problems that interfaces solve, definitely  overlap with the problems solved by closures.  The implementation of interfaces in Go makes the distinction of when to use one or the other, somewhat difficult at times. Usually, whether an interface or a closure is used, is not really of importance and whichever solves the problem in the simplest manner, is the right choice. Typically, closures will be simpler to implement, if the operation is simple by nature. However, as soon as the logic contained within a closure becomes complex, one should strongly consider using an interface instead.  
 
-// TODO : Still not particularly happy the ending of this chapter, still seems unfinished
-
-// TODO : I think that it would be really nice to show how to do function chaining in this manner, using closures.
-
 Dave Cheney has an excellent write up on this topic, and a talk on the same topic:
 
 * https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
@@ -1081,7 +1075,7 @@ Above, we are defining a `Metadata` object, which will provide us with property 
 
 Now, let's look at an example of how we can use a constructor, to further prevent breaking our code, when making changes to our `Metadata` struct:
 
-```go
+​```go
 func NewMetadata(user types.User) Metadata {
     return &Metadata{
         CreatedBy: user,
