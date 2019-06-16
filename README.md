@@ -113,7 +113,7 @@ Our focus being on the naming of the `Parse` function. Despite this function nam
 
 ```go
 func Parse(filepath string) (Config, error) {
-    switch getFileExtension(filepath) {
+    switch fileExtension(filepath) {
     case "json":
         return parseJSON(filepath)
     case "yaml":
@@ -128,10 +128,10 @@ func Parse(filepath string) (Config, error) {
 
 More specific, but not much, just appropriately. It's still clear what the difference is between the parent function and the sub-functions, without being overly specific. This enables each sub-function to appear clear on it's own, whereas if we had named the `parseJSON` function `json` instead. This would not have been the case. 
 
-Notice that `getFileExtension` is actually a little more specific. However, this is because the functionality of this function is, in fact, quite specific:
+Notice that `fileExtension` is actually a little more specific. However, this is because the functionality of this function is, in fact, quite specific:
 
 ```go
-func getFileExtension(filepath string) string {
+func fileExtension(filepath string) string {
     segemnts := strings.Split(filepath, ".")
     return segments[len(segments)-1]
 }
@@ -144,7 +144,7 @@ Rather interestingly, the opposite is true for variables. Unlike functions, our 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
 
-The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unnecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
+The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `fileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unnecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
 
 
 ```go
@@ -888,11 +888,11 @@ func insertUser(w http.ResponseWriter, user User) error {
 }
 ```
 
-Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a json object to our client. This is all quite common practice, typically when returning a user object, where the password has been hashed, we don't want to return the hashed password.
+Once again, at first glance everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have inserted our user into the store successfully, we then set the password to nothing, before returning the user as a JSON object to our client. This is all quite common practice, typically when returning a user object, where the password has been hashed, we don't want to return the hashed password.
 
 However, imagine that we are using an in-memory store, based on a `map`, this code will produce some unexpected results. If we check in our user store, see that the change we made to the users password in the http handler function, also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest`, is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
 
-This is a great example of why both mutability and variable scope, can cause some serious issues and bugs, when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of our variable. Even more worrying, we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to being a globally available variable. Depending on the variable scope of our store. As demonstrated by the above example, this can lead to disastrous bugs, which are particularly difficult to find and erraticate.
+This is a great example of why both mutability and variable scope, can cause some serious issues and bugs, when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of our variable. Even more worrying, we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to being a globally available variable. Depending on the variable scope of our store. As demonstrated by the above example, this can lead to disastrous bugs, which are particularly difficult to find and eradicate.
 
 Fortunately, the fix for this bug, is rather simple:
 
@@ -1024,7 +1024,7 @@ Jon Bodner also has a talk about this topic
 
 ### Interfaces in Go
 
-In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fullfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes golang feel more fast-paced and dynamic, as interface implementation is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can be difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
+In general, the go method for handling `interface`'s is quite different from other languages. Interfaces aren't explicitly implemented, like they would be in Java or C#, but are implicitly implemented if they fulfill the contract of the interface. As an example, this means that any `struct` which has an `Error()` method, implements / fulfills the `Error` interface and can be returned as an `error`. This has it's advantages, as it makes Go feel more fast-paced and dynamic, as interface implementation is extremely easy. There are obviously also disadvantages with this approach to implementing interfaces. As the interface implementation is no longer explicit, it can be difficult to see which interfaces are implemented by a struct. Therefore, the most common way of defining interfaces, is by writing interfaces with as few methods a possible. This way, it will be easier to understand whether or not a struct fulfills the contract of an interface.
 
 There are other ways of keeping track of whether your structs are fulfilling the interface contract. One method, is to create constructors, which return an interface, rather than the concrete type:
 
@@ -1071,7 +1071,7 @@ type AudioFile struct {
 }
 ```
 
-Above, we are defining a `Metadata` object, which will provide us with property fields that we are likely to use on many different struct types. The neat thing about using the embedded struct, rather than explicitly defining the properties directly in our struct, is that it has decoupled the `Metadata` fields. Should be choose to update our `Metadata` object, we can change it in a single place. As mentioned earlier, we want to ensure that a change one place in our code, doesn't break other parts of our code. Keeping these properties centralised, will keep it clear to users that a structures with embedded `Metadata` have the same properites. Much like, structures that fulfill interfaces, have the same methods.  
+Above, we are defining a `Metadata` object, which will provide us with property fields that we are likely to use on many different struct types. The neat thing about using the embedded struct, rather than explicitly defining the properties directly in our struct, is that it has decoupled the `Metadata` fields. Should be choose to update our `Metadata` object, we can change it in a single place. As mentioned earlier, we want to ensure that a change one place in our code, doesn't break other parts of our code. Keeping these properties centralised, will keep it clear to users that a structures with embedded `Metadata` have the same properties. Much like, structures that fulfill interfaces, have the same methods.  
 
 Now, let's look at an example of how we can use a constructor, to further prevent breaking our code, when making changes to our `Metadata` struct:
 
@@ -1091,7 +1091,7 @@ func NewDocument(title string, body string) Document {
 }
 ```
 
-At a later point in time, we find out, that we would also like a `CreatedAt` field on our `Metadata` object. This is now easily achieveable, by simply updating our `NewMetadata` constructor:
+At a later point in time, we find out, that we would also like a `CreatedAt` field on our `Metadata` object. This is now easily achievable, by simply updating our `NewMetadata` constructor:
 
 ```go
 func NewMetadata(user types.User) Metadata {
@@ -1102,7 +1102,7 @@ func NewMetadata(user types.User) Metadata {
 }
 ```
 
-Now, both our `Document` and `AudioFile` structures are updated, to also populate these fields on construction. This is the core principle behind decoupling and an excellent example of ensuring maintanability of code. We can also add new methods, without breaking our code:
+Now, both our `Document` and `AudioFile` structures are updated, to also populate these fields on construction. This is the core principle behind decoupling and an excellent example of ensuring maintainability of code. We can also add new methods, without breaking our code:
 
 ```go
 type Metadata struct {
@@ -1131,7 +1131,7 @@ func NewNullWriter() io.Writer {
     return &NullWriter{}
 }
 ```
-The above code compiles. The first time I saw this, I couldn't believe that this was actually compiling. Technically, we are implemnting the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
+The above code compiles. The first time I saw this, I couldn't believe that this was actually compiling. Technically, we are implementing the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
 
 ```go
 func main() {
@@ -1147,15 +1147,15 @@ As mentioned before, the above code will compile. The `NewNullWriter` returns a 
 
 The explanation being, that an interface method in Go, is essentially a function pointer. In this case, since we are pointing the function of an interface, rather than an actual method implementation, we are trying to invoke a function, which is in actuality a nil pointer. Oops! Personally, I think that this is a massive oversight in the Go compiler. This code **should not** compile... but while this is being fixed (if it ever will be), let's just promise each other, never to implement code in this way. In an attempt to be more clear with our implementation, we have ended up shooting ourselves in the foot and bypassing compiler checks. 
 
-> Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. In my opinion, this is just laziness combined with congnitive dissonance. 
+> Some people argue that using embedded interfaces, is a good way of creating a mock structure, for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of an interface, but instead only implement the few methods that you wish to be tested. Within testing / mocking, I can see the argument, but I am still not a fan of this approach.
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
-<center style="font-style: italic; margin: 0 150px 0 150px">"Be consdervative in what you do, be liberal in what you accept from others" - Jon Postel</center>
+<center style="font-style: italic; margin: 0 150px 0 150px">"Be conservative in what you do, be liberal in what you accept from others" - Jon Postel</center>
 
 > FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
-In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that inteface.
+In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice, and becomes super beneficial when doing tests with mocking. As an example, we can create a function which takes a writer interface as input and invokes the `Write` method of that interface.
 
 ```go
 type Pipe struct {
@@ -1198,7 +1198,7 @@ func TestFn(t *testing.T) {
 When constructing our `Pipe` struct with the `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do, was add 4 lines of code. This is why in idiomatic go, it is encouraged to make interface types as small as possible, to make implement a pattern like this as easy as possible. However, this implementation of interfaces, also comes with a *huge* downside. 
 
 ### The empty `interface{}`
-Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed disatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
+Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed dissatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
 
 But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that Go determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
 
@@ -1232,11 +1232,11 @@ func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-All the *less elegant* code, is ocntained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
+All the *less elegant* code, is contained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
 
 However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid son, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
 
-The problem with this, is that we are leaning towards using Go (a statically typed languagae) as a dynamically typed langauge. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
+The problem with this, is that we are leaning towards using Go (a statically typed language) as a dynamically typed language. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
 
 ```go
 type HashMap struct {
@@ -1258,7 +1258,7 @@ func (hashmap *HashMap) Get(id string) (interface{}, error) {
 
 > NOTE: I have omitted thread-safety from the example for simplicity
 
-Please keep in mind that the implementation pattern used above, is used in quite a lot of golang packages. It is even used in the standard library `sync` package, for the `sync.Map` type. So, what is the big problem with this implementation? Well, let's have a look at an example of using this package.
+Please keep in mind that the implementation pattern used above, is used in quite a lot of Go packages. It is even used in the standard library `sync` package, for the `sync.Map` type. So, what is the big problem with this implementation? Well, let's have a look at an example of using this package.
 
 ```go
 func SomeFunction(id string) (Item, error) {
@@ -1312,7 +1312,7 @@ Creating the wrapper above, will now ensure that we are using the actual types a
 
 ## Summary
 
-First of all, thank you for making it all the way through the article. I hope that it has given some insight into what clean code is, as well as how it will help ensure maintanability, readability and stability in your code base. To sum up all the topics covered:
+First of all, thank you for making it all the way through the article. I hope that it has given some insight into what clean code is, as well as how it will help ensure maintainability, readability and stability in your code base. To sum up all the topics covered:
 
 **Functions** - Naming of functions should become more specific, the smaller the scope of the function. Ensure that all functions are single purpose. A good measure, being to limit your function length to 5-8 lines and only takes 2-3 input arguments.
 
@@ -1324,7 +1324,7 @@ First of all, thank you for making it all the way through the article. I hope th
 
 **Interfaces** - Use interfaces as much as possible to loosen the coupling of your code. Contain any code using the empty `interface{}` as much as possible and prevent it being exposed. 
 
-Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestable. We help everyone involved in the project by establishing a flexable code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
+Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestible. We help everyone involved in the project by establishing a flexible code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
 
 I therefore hope, that you will join the discussion to help what we, the Go community, define as clean code. Let's establish a common ground, so that we improve software. Not only for ourselves, but the sake of everyone.
 
