@@ -6,7 +6,7 @@ The motivation behind writing this document, is to create a resource (and eventu
 
 <center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </center>
 
-The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shapre or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
+The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shape or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
 
 This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
 
@@ -27,7 +27,7 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
     * [Variable Declaration](#Variable-Declaration)
     
 * [Clean Go](#Clean-Go)
-		* [Return Values](#Return Values) 
+    * [Return Values](#Return-lValues) 
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Pointers in Go](#Pointers-in-Go)
@@ -38,7 +38,7 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
 
 ## Introduction to Clean Code
 
-Clean Code, is the pragmatic concept of ensuring readable and maintanable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
+Clean Code, is the pragmatic concept of ensuring readable and maintainable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
 
 ### Test Driven Development
 
@@ -56,7 +56,7 @@ Step three of the cycle, ensures that we can refactor our code as we are writing
 ###  Naming
 
 #### Comments
-First things first: I want to address the topic of comments. Unecessary comments are the biggest indicator of code smell. Comments are usually added into a code base, because something is so unclear, that it's deemed necessary to explain with a comment. Of course, this is not always the case. In Go, all according to `gofmt` all public variables and functions, should be annotated. I think this is absolutely fine, as this makes documentation easy. However, I therefore always want to distinguish between comments which enable auto-generated documentation and all other comments. Annotation comments, for documentation, should be written like documentation. They should be high level and concern the logical implementation as little as possible, other than on the highest abstraction level. 
+First things first: I want to address the topic of comments. Unnecessary comments are the biggest indicator of code smell. Comments are usually added into a code base, because something is so unclear, that it's deemed necessary to explain with a comment. Of course, this is not always the case. In Go, all according to `gofmt` all public variables and functions, should be annotated. I think this is absolutely fine, as this makes documentation easy. However, I therefore always want to distinguish between comments which enable auto-generated documentation and all other comments. Annotation comments, for documentation, should be written like documentation. They should be high level and concern the logical implementation as little as possible, other than on the highest abstraction level. 
 
 The reasoning behind this, is that there are other ways to explain code and ensure that code is being written comprehensibly and expressively. If the code is neither of the two, some people find it acceptable to replace this, with a comment explaining the logic. The matter of the fact is, that most people will not read comments, because it's very intrusive to the experience of reading code. However, let's start from the beginning. Bad comments:
 
@@ -96,7 +96,7 @@ Of course, this example, was relatively easy. It's unfortunately not always this
 
 #### Function Naming
 
-We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes thes general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
 func main() {
@@ -144,7 +144,7 @@ Rather interestingly, the opposite is true for variables. Unlike functions, our 
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
 
-The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
+The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `getFileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unnecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
 
 
 ```go
@@ -192,7 +192,7 @@ In the words of Robert C. Martin:
 
 <center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</center>
 
-When writing clean code, our primary goal is to make our code easily digestable. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not necessarily to avoid code duplication. The more promenant reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
+When writing clean code, our primary goal is to make our code easily digestible. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not necessarily to avoid code duplication. The more prominent reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
 ```
 fn GetItem:
@@ -249,9 +249,9 @@ func GetItem(extension string) (Item, error) {
 }
 ```
 
-Not only can this kind of code result in a really bad experience for other programmers, who will have to fight to understand the flow of the code. Should the logic in our `if` statements expand, it becomes exponentially more difficult to figure out which statement returns what. It is unfortunately not uncommon to find this kind of implementation in code. I have even bumped into examples of the beginning `if` statement of a correspending `else` statement, was on another page of my monitor. Having to scroll up and  down a page, while trying to figure out what a function does, is not ideal. Even though, we don't have to scroll on our page to see the corresponding `if else` statements in the above code sample, we are still scrolling with our eyes and maintaining state in our brain. Most programmers can quite easily contain this state for the function above, or worse examples. However, we have forced readers of our code, to use unecessary brain power. This may result in reader fatigue, should we repeat this mistake throughout our code. Constantly having to parse code like the above, will make reading the code more and more difficult, which we of course, want to avoid.
+Not only can this kind of code result in a really bad experience for other programmers, who will have to fight to understand the flow of the code. Should the logic in our `if` statements expand, it becomes exponentially more difficult to figure out which statement returns what. It is unfortunately not uncommon to find this kind of implementation in code. I have even bumped into examples of the beginning `if` statement of a corresponding `else` statement, was on another page of my monitor. Having to scroll up and  down a page, while trying to figure out what a function does, is not ideal. Even though, we don't have to scroll on our page to see the corresponding `if else` statements in the above code sample, we are still scrolling with our eyes and maintaining state in our brain. Most programmers can quite easily contain this state for the function above, or worse examples. However, we have forced readers of our code, to use unnecessary brain power. This may result in reader fatigue, should we repeat this mistake throughout our code. Constantly having to parse code like the above, will make reading the code more and more difficult, which we of course, want to avoid.
 
-So, how do we clean this function? Foruntately, it's actually quite simple. On our first iteration, we will try to  ensure that we are returning an error as soon as we can. Instead of nested the `if` and `else` statements, we want to "push our code to the left". This is handled by returning from our function, as soon as we possibly can.  
+So, how do we clean this function? Fortunately, it's actually quite simple. On our first iteration, we will try to  ensure that we are returning an error as soon as we can. Instead of nested the `if` and `else` statements, we want to "push our code to the left". This is handled by returning from our function, as soon as we possibly can.  
 
 ```go
 func GetItem(extension string) (Item, error) {
@@ -315,7 +315,7 @@ func getItemFromCache(reference string) (Item, bool) {
 ```
 > For production code, one should elaborate on the code even further, by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, the `bool` values will suffice for now. Examples of returning errors more explicitly will be explained in more detail later.
 
-The resulting clean version of our function, has resulted in a lot more lines of code. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code details that we aren't interested in and dive deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleaniless of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
+The resulting clean version of our function, has resulted in a lot more lines of code. However, the code is so much easier to read. It's layered in an onion-style fashion, where we can ignore code details that we aren't interested in and dive deeper into the functions that we wish to know the workings behind. When we do deep-dive into the lower level functionality, it will be extremely easy to comprehend, because we will only have to understand 3-5 lines in this case. This example illustrates, that we cannot score the cleanliness of our code from the line count of our functions. The first function iteration was much shorter. However, it was artificially short and very difficult to read. In most cases cleaning code will, to begin with, expand the already existing code base, in terms of lines of code. However, the benefit of readability is far preferred. If you are ever in doubt about this, think of how you feel about the following function, which does the same:
 
 ```go
 func GetItemIfActive(extension string) (Item, error) {
@@ -406,7 +406,7 @@ We will use the idea of wrapping functions to introduce more clean and safe code
 [RabbitMQ Go tutorial](#https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
 
 ### Variable Scope
-Now, let's go back one step, back to the idea of writing smaller functions. This has another nice side-effect, which we didn't cover in the previous chapter:  Writing smaller function can typically eliminate using longer lasting mutable variables. Writing code with global variables, is a pratice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then, by definition, it's value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. This is yet another example of a trivial problem, which is exasterbate, when the codebase expands. Let's, look at a short example of how even larger scoped (not global) variables can cause problems. 
+Now, let's go back one step, back to the idea of writing smaller functions. This has another nice side-effect, which we didn't cover in the previous chapter:  Writing smaller function can typically eliminate using longer lasting mutable variables. Writing code with global variables, is a practice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then, by definition, it's value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. This is yet another example of a trivial problem, which is exacerbate, when the codebase expands. Let's, look at a short example of how even larger scoped (not global) variables can cause problems. 
 
 Larger scoped variables, also introduce the issue of variable shadowing as shown int he code taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
 
@@ -438,11 +438,11 @@ func main() {
 }
 ```
 
-The problem with this code, from a quick skim, it seems like that the `var val string` value, should be printed out as: `Success` by the end of the `main` function. Unfortuantely, this is not the case. The reason for this is, the line:
+The problem with this code, from a quick skim, it seems like that the `var val string` value, should be printed out as: `Success` by the end of the `main` function. Unfortunately, this is not the case. The reason for this is, the line:
 
 > val, err := doComplex()
 
-This declares a new variable `val` in the the switch case `32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that the Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable largely scoped variable, is completely unecessary. If we do a **very** simple refactor, we will no longer have this issue:
+This declares a new variable `val` in the the switch case `32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that the Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable largely scoped variable, is completely unnecessary. If we do a **very** simple refactor, we will no longer have this issue:
 
 ```go
 func getStringResult(num int) (string, error) {
@@ -469,7 +469,7 @@ func main() {
 }
 ```
 
-After our refactor, `val` is no longer mutated and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger more complex systems, it can be impossible to figure out, why errors are happening. We don't want this to happen. Not only because we generally dislike errors happening in software, but it is also disrespectful to our colleagues, and ourselves, that we are potentially wasting each others live's, having to debug this type of code. Let's take responsibility ourselves, rather than blaming the variable decalaration syntax in Go.
+After our refactor, `val` is no longer mutated and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger more complex systems, it can be impossible to figure out, why errors are happening. We don't want this to happen. Not only because we generally dislike errors happening in software, but it is also disrespectful to our colleagues, and ourselves, that we are potentially wasting each others live's, having to debug this type of code. Let's take responsibility ourselves, rather than blaming the variable declaration syntax in Go.
 
 On a side not, if the `// do something else` part is another attempt to mutate the `val` variable. We should extract whatever logic in there as a function, as well as the previous part of it. This way, instead of prolonging the mutational scope of our variables, we can just return a new value:
 
@@ -573,7 +573,7 @@ Of course, this doesn't actually limit us from mutating our `sender` variable. T
 
 > NOTE: The keyword `const` does exist, but are limited for use on primitive types. 
 
-One way of getting around this, which at least will limit the mutability of a variable to a package level. Is to create a structure, with the variable as a private property. This private property is, thenceforth, only accesible through other methods of this wrapping structure. Expanding on our channel example, this would look something like the following:
+One way of getting around this, which at least will limit the mutability of a variable to a package level. Is to create a structure, with the variable as a private property. This private property is, thenceforth, only accessible through other methods of this wrapping structure. Expanding on our channel example, this would look something like the following:
 
 ```go
 type Sender struct {
@@ -600,18 +600,18 @@ func main() {
 }
 ```
 
-Looking at the exampe above, it's clear how this also simplifies the usage of our package. This way of hiding the implementation, is not only beneficial for the maintainers of the package, but also the users of the package. Now, when initialising and using the `Sender` structure, there is no concern of the implementation. This opens up, for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact users of the package have. If we no longer wish to use a channel implementation in our package, we can easily change this, without breaking the usage of the `Send` method (as long as we adhere to it's current function signature).
+Looking at the example above, it's clear how this also simplifies the usage of our package. This way of hiding the implementation, is not only beneficial for the maintainers of the package, but also the users of the package. Now, when initialising and using the `Sender` structure, there is no concern of the implementation. This opens up, for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact users of the package have. If we no longer wish to use a channel implementation in our package, we can easily change this, without breaking the usage of the `Send` method (as long as we adhere to it's current function signature).
 
 >  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](#https://www.youtube.com/watch?v=kJq81Y7OEx4)
 
 ## Clean Go
 
-This section will describe some less generic aspects of writing clean golang code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with golang examples, to golang specific descriptions, based on clean code principles.
+This section will describe some less generic aspects of writing clean Go code, but rather be discussing aspects that are very go specific. Like the previous section, there will still be a mix of generic and specific concepts being discussed, however, this section marks the start of the document, where the document changes from a generic description of clean code with Go examples, to Go specific descriptions, based on clean code principles.
 
 ### Return Values
 
 #### Returning Defined Errors
-We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readibility, testability and maintanability of the code base. This error returning method will improve all three aspects, with very little effort.
+We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readability, testability and maintainability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
 
@@ -647,7 +647,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 }
 ```
 
-This is actually not too bad. However, there is one glaring problem with this. Errors in golang, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if  the error message value changes, our code breaks (softly). Our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse would be, if a client used our package to write this code. Their software would inexplicably break all of a sudden after a package update, should we choose to change the message of the returnig error. This is quite obviously something that we want to avoid. Fortunately, the fix is very simple. 
+This is actually not too bad. However, there is one glaring problem with this. Errors in Go, are simply just an `interface` which implements a function (`Error()`) which returns a string. Therefore, we are now hardcoding the expected error code into our code base. This isn't too great. Mainly, because if  the error message value changes, our code breaks (softly). Our code is too closely coupled, meaning that we would have to change our code in, possibly, many different places. Even worse would be, if a client used our package to write this code. Their software would inexplicably break all of a sudden after a package update, should we choose to change the message of the returning error. This is quite obviously something that we want to avoid. Fortunately, the fix is very simple. 
 
 ```go
 package clean
@@ -691,7 +691,7 @@ This feels much nicer and is also much safer. Some would even say that it's easi
 
 This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
 
-Returning default `Null` values like the previous examples, can also be more safe, in certain caes. As an example, a user of our package could forget to check for errors and end up initialising a variable, pointing to an empty struct containing a default value of `nil` as one or more property values. When attempting to access this `nil` value later in the code, this could cause a panic in thier code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value appraoch, we now only have to change our code in a single place:
+Returning default `Null` values like the previous examples, can also be more safe, in certain cases. As an example, a user of our package could forget to check for errors and end up initialising a variable, pointing to an empty struct containing a default value of `nil` as one or more property values. When attempting to access this `nil` value later in the code, this could cause a panic in their code. However, when we return our custom default value instead, we can ensure that all values, which otherwise would default to `nil`, are initialised and thereby ensure that we do not cause panics in our users / clients software. This is also beneficial for ourselves, as if we wanted to achieve the same safety, without returning a default value, we would have to change our code, every place in which we return this type of empty value. However, with our default value approach, we now only have to change our code in a single place:
 
 ```go
 var NullItem = Item{
@@ -700,7 +700,7 @@ var NullItem = Item{
 ```
 > NOTE: In many scenarios, invoking the panic will actually be preferable. To indicate that there is an error check missing.
 
-> NOTE: Every interface property in golang, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
+> NOTE: Every interface property in Go, has a default value of `nil`. This means that this is useful, for any struct, which has an interface property. This is also true for structs which contain channels, maps and slices, which could potentially also have a `nil` value.
 
 #### Returning Dynamic Errors
 There are certainly some scenarios, where returning an error variable might not actually be viable. In cases where customised errors' information is dynamic, to describe error events more specifically, we cannot define and return our static errors anymore. As an example:
@@ -784,7 +784,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 
 A controversial aspect of Go, is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. Previously, we traversed in explained the troubles `nil` can cause, but to sum up: Things break, when you try to access methods or properties of a `nil` value. In the mentioned section, it was recommended to try an minimise usage of returning a  `nil` value. This way, users of our code, would be less prone to accidentally access `nil` values by a mistake. 
 
-There are other scenarios in which it is common to find `nil` values, which can cause some unecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. If accessed, they will cause a panic. An example of this, can be seen below:
+There are other scenarios in which it is common to find `nil` values, which can cause some unnecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. If accessed, they will cause a panic. An example of this, can be seen below:
 
 ```go
 type App struct {
@@ -844,7 +844,7 @@ The reason why this is preferable, is that we are ensuring that users of our pac
 ### Pointers in Go
 Pointers in go are rather a large topic. They are a very big part of working with the language, so much so, that it is essentially impossible to write go, without some knowledge of pointers and their workings in go. I will not go into detail, of the inner workings of Pointers in go in this article. Instead, we will focus on their quirks and how to handle them in go.
 
-Pointers add complexity, however, as mentioned, it's almost impossible to avoid them when writing go. Therefore, it is important to understand how to use pointers, without adding unecessary complexity and thereby keeping your codebase clean. Without restraining oneself, the incorrect use of pointers can introduce nasty side-effects, introducing bugs that are particularly difficult to debug. Of course, when sticking to the basic principles of writing clean code, introduced in the first part of this article, we limit our exposure of introducing this complexity, but pointers are a particular case, which can still undo all of our previous hard work, of making our code clean. 
+Pointers add complexity, however, as mentioned, it's almost impossible to avoid them when writing go. Therefore, it is important to understand how to use pointers, without adding unnecessary complexity and thereby keeping your codebase clean. Without restraining oneself, the incorrect use of pointers can introduce nasty side-effects, introducing bugs that are particularly difficult to debug. Of course, when sticking to the basic principles of writing clean code, introduced in the first part of this article, we limit our exposure of introducing this complexity, but pointers are a particular case, which can still undo all of our previous hard work, of making our code clean. 
 
 #### Pointer Mutability
 I have already used the word mutability more than once in this article, as a negative. Mutability is obviously not a clear-cut bad thing and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool, but we should really only ever use it, when it's necessary. Let's have a look at a code example illustrating why:
@@ -864,7 +864,7 @@ func (store *UserStore) userExists(id int64) bool {
 }
 ```
 
-At first glance, this doesn't seem too bad. In fact, it might even seem like a rather simple insert function for a common list structure. We accpet a pointer as input and if no other users with this `id` exist, then we insert the user pointer into our list. Now, we use this functionality in our public API for creating new users:
+At first glance, this doesn't seem too bad. In fact, it might even seem like a rather simple insert function for a common list structure. We accept a pointer as input and if no other users with this `id` exist, then we insert the user pointer into our list. Now, we use this functionality in our public API for creating new users:
 
 ```go
 func CreateUser(w http.ResponseWriter, r *http.Request) {
