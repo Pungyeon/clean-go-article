@@ -987,7 +987,7 @@ However, other than this being a very messy function signature, we also have ano
 One way to solve this issue, is to change our concat function. In the example below, I have changed it to only take a single byte array as input argument, but it could just as well have been the opposite case. 
 
 ```go
-func concat(data []byte) func([]byte) ([]byte, error) {
+func concat(data []byte) func(data []byte) ([]byte, error) {
   return func(concatting []byte) ([]byte, error) {
     return append(data, concatting), nil
   }
