@@ -4,7 +4,7 @@
 
 The motivation behind writing this document, is to create a resource (and eventually a reference) for the Go community, which will help developers write cleaner code. This benefits every one of us. Whether we are writing code by ourselves, or writing code in larger teams. Establishing good paradigms for writing clean code and ensuring that this is available for everyone, will help prevent many meaningless hours on trying to understand and parse others (and our own) code.  
 
-<center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </center>
+> We don’t read code, we <b>decode</b> it - Peter Seibel
 
 The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shape or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
 
@@ -71,7 +71,7 @@ for i := 0; i < 10; i++ {
 
 This comment, is what I call a tutorial comment. It's pretty common in tutorials, which explain the low level functionality of a language (or programming on a more general level). The matter of the fact is, that these comments are absolutely useless in production code. Hopefully, we aren't collaborating with other programmers, who don't understand that principles behind the language we have chosen to write in, or even worse, don't understand simple principles of programming. As programmers, we don't have to read the comment, we know this is happening, by reading the code. Hence the proverb:
 
-<center style="margin: 0 100px 20px 100px; font-style: italic">"Document why, not how." - Venkat Subramaniam</center>
+> "Document why, not how." - Venkat Subramaniam
 
 Following this logic, we can now change our comment, to explain why we are iterating from the range zero to nine:
 
@@ -142,7 +142,7 @@ This kind of logical progression in our function names, makes the code easier to
 #### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variable naming should progress from more to less specific. 
 
-<center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</center>
+> "You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney
 
 The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `fileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unnecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
 
@@ -190,7 +190,7 @@ Even though the function might still be readable, due to it's brevity, there is 
 
 In the words of Robert C. Martin: 
 
-<center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</center>
+> "How small should a function be? Smaller than that!"
 
 When writing clean code, our primary goal is to make our code easily digestible. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not necessarily to avoid code duplication. The more prominent reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
@@ -1049,7 +1049,7 @@ The above function ensures, that the `NullWriter` struct implements the `Writer`
 
 There is another way of trying to be more explicit about which interfaces a given struct implements. However, this method achieves the opposite of what we wish to achieve. The method being, using embedded interfaces, as a struct property.
 
-<center style="font-style: italic">"Wait what?" - Presumably most people</center>
+> "Wait what?" - Presumably most people
 
 So, let's rewind a little, before we dive deep into the forbidden forest of smelly Go. In Go, we can use embedded structs, as a type of inheritance in our struct definitions. This is really nice as we can decouple our code, by defining reusable structs.
 
@@ -1151,7 +1151,7 @@ The explanation being, that an interface method in Go, is essentially a function
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
-<center style="font-style: italic; margin: 0 150px 0 150px">"Be conservative in what you do, be liberal in what you accept from others" - Jon Postel</center>
+> "Be conservative in what you do, be liberal in what you accept from others" - Jon Postel
 
 > FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
