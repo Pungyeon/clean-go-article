@@ -160,7 +160,7 @@ The reason why this is true, is because of the scope of the variable, rather tha
 ```go
 func BeerBrandListToBeerList(beerBrands []BeerBrand) []Beer {
     var beerList []Beer
-    for _, brand := range beerBrandList {
+    for _, brand := range beerBrands {
         for _, beer := range brand {
             beerList = append(beerList, beer)
         }
