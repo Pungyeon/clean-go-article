@@ -987,7 +987,7 @@ However, other than this being a very messy function signature, we also have ano
 One way to solve this issue, is to change our concat function. In the example below, I have changed it to only take a single byte array as input argument, but it could just as well have been the opposite case. 
 
 ```go
-func concat(data []byte) func(data []byte) func(data []byte) ([]byte, error) {
+func concat(data []byte) func(data []byte) ([]byte, error) {
   return func(concatting []byte) ([]byte, error) {
     return append(data, concatting), nil
   }
@@ -1327,4 +1327,3 @@ First of all, thank you for making it all the way through the article. I hope th
 Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestible. We help everyone involved in the project by establishing a flexible code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
 
 I therefore hope, that you will join the discussion to help what we, the Go community, define as clean code. Let's establish a common ground, so that we improve software. Not only for ourselves, but the sake of everyone.
-
