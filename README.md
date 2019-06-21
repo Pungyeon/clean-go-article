@@ -4,7 +4,7 @@
 
 The motivation behind writing this document, is to create a resource (and eventually a reference) for the Go community, which will help developers write cleaner code. This benefits every one of us. Whether we are writing code by ourselves, or writing code in larger teams. Establishing good paradigms for writing clean code and ensuring that this is available for everyone, will help prevent many meaningless hours on trying to understand and parse others (and our own) code.  
 
-> We don’t read code, we <b>decode</b> it - Peter Seibel
+<p align=center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </p>
 
 The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shape or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
 
@@ -71,7 +71,7 @@ for i := 0; i < 10; i++ {
 
 This comment, is what I call a tutorial comment. It's pretty common in tutorials, which explain the low level functionality of a language (or programming on a more general level). The matter of the fact is, that these comments are absolutely useless in production code. Hopefully, we aren't collaborating with other programmers, who don't understand that principles behind the language we have chosen to write in, or even worse, don't understand simple principles of programming. As programmers, we don't have to read the comment, we know this is happening, by reading the code. Hence the proverb:
 
-> "Document why, not how." - Venkat Subramaniam
+<p align=center style="margin: 0 100px 20px 100px; font-style: italic">"Document why, not how." - Venkat Subramaniam</p>
 
 Following this logic, we can now change our comment, to explain why we are iterating from the range zero to nine:
 
@@ -142,7 +142,7 @@ This kind of logical progression in our function names, makes the code easier to
 #### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variable naming should progress from more to less specific. 
 
-> "You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney
+<p align=center style="margin: 0 100px 20px 100px; font-style: italic">"You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'." - Dave Cheney</p>
 
 The reason why we want to become less and less specific with our variables, is the fact that it becomes clearer and clearer for the reader, what the variable represents, the smaller the scope of the variable is. In the example of the previous function `fileExtension`, the naming of the variable `segments`, could even be shortened to `s`, if we wanted to. The context of the variable is so clear, it is unnecessary to explain our code further, with longer variable names. Another good example of this, would be in nested for loops. 
 
@@ -190,7 +190,7 @@ Even though the function might still be readable, due to it's brevity, there is 
 
 In the words of Robert C. Martin: 
 
-> "How small should a function be? Smaller than that!"
+<p align=center style="margin: 0 100px 20px 100px; font-style: italic">"How small should a function be? Smaller than that!"</p>
 
 When writing clean code, our primary goal is to make our code easily digestible. The most effective way to do this, is to make our functions as small as possible. It's important to understand, that this is not necessarily to avoid code duplication. The more prominent reason for this is to heighten the code comprehension. Another way of explaining this, is to look at a function description: 
 
@@ -987,7 +987,7 @@ However, other than this being a very messy function signature, we also have ano
 One way to solve this issue, is to change our concat function. In the example below, I have changed it to only take a single byte array as input argument, but it could just as well have been the opposite case. 
 
 ```go
-func concat(data []byte) func(data []byte) func(data []byte) ([]byte, error) {
+func concat(data []byte) func(data []byte) ([]byte, error) {
   return func(concatting []byte) ([]byte, error) {
     return append(data, concatting), nil
   }
@@ -1049,7 +1049,7 @@ The above function ensures, that the `NullWriter` struct implements the `Writer`
 
 There is another way of trying to be more explicit about which interfaces a given struct implements. However, this method achieves the opposite of what we wish to achieve. The method being, using embedded interfaces, as a struct property.
 
-> "Wait what?" - Presumably most people
+<p align=center style="font-style: italic">"Wait what?" - Presumably most people</p>
 
 So, let's rewind a little, before we dive deep into the forbidden forest of smelly Go. In Go, we can use embedded structs, as a type of inheritance in our struct definitions. This is really nice as we can decouple our code, by defining reusable structs.
 
@@ -1075,7 +1075,7 @@ Above, we are defining a `Metadata` object, which will provide us with property 
 
 Now, let's look at an example of how we can use a constructor, to further prevent breaking our code, when making changes to our `Metadata` struct:
 
-​```go
+```go
 func NewMetadata(user types.User) Metadata {
     return &Metadata{
         CreatedBy: user,
@@ -1131,6 +1131,7 @@ func NewNullWriter() io.Writer {
     return &NullWriter{}
 }
 ```
+
 The above code compiles. The first time I saw this, I couldn't believe that this was actually compiling. Technically, we are implementing the interface of `Writer`, because we are embedding the interface and "inheriting" the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
 
 ```go
@@ -1151,7 +1152,7 @@ The explanation being, that an interface method in Go, is essentially a function
 
 Let's quickly get back to clean code and quickly get back to using interfaces the proper way in Go. Let's talk about using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is:
 
-> "Be conservative in what you do, be liberal in what you accept from others" - Jon Postel
+<p align=center style="font-style: italic; margin: 0 150px 0 150px">"Be conservative in what you do, be liberal in what you accept from others" - Jon Postel</p>
 
 > FUN FACT: This proverb originally has nothing to do with Go, but is actually taken from an early specification of the TCP networking protocol.
 
@@ -1327,4 +1328,3 @@ First of all, thank you for making it all the way through the article. I hope th
 Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestible. We help everyone involved in the project by establishing a flexible code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
 
 I therefore hope, that you will join the discussion to help what we, the Go community, define as clean code. Let's establish a common ground, so that we improve software. Not only for ourselves, but the sake of everyone.
-
