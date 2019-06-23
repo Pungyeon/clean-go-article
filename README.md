@@ -4,7 +4,7 @@
 
 This document is a reference for the Go community that aims to help developers write cleaner code. Whether you're working on a personal project or as part of a larger team, writing clean code is an important skill to have. Establishing good paradigms and consistent, accessible standards for writing clean code can help prevent developers from wasting many meaningless hours on trying to understand their own (or others') work.
 
-<blockquote align=center><em>We don’t read code, we <b>decode</b> it &ndash; Peter Seibel</em></blockquote>
+> <em>We don’t read code, we <b>decode</b> it &ndash; Peter Seibel</em>
 
 As developers, we're sometimes tempted to write code in a way that's convenient for the time being without regard for best practices; this makes code reviews and testing more difficult. In a sense, we're <em>encoding</em>&mdash;and, in doing so, making it more difficult for others to decode our work. But we want our code to be usable, readable, and maintainable. And that requires coding the <em>right</em> way, not the easy way.
 
@@ -75,7 +75,7 @@ for i := 0; i < 10; i++ {
 
 This is what I like to call a <strong>tutorial comment</strong>; it's fairly common in tutorials, which often explain the low-level functionality of a language (or programming in general). While these comments may be helpful for beginners, they're absolutely useless in production code. Hopefully, we aren't collaborating with programmers who don't understand something as simple as a looping construct by the time they've begun working on a development team. As programmers, we shouldn't have to read the comment to understand what's going on&mdash;we know that we're iterating over the range 0 to 9 because we can simply read the code. Hence the proverb:
 
-<blockquote align=center style="margin: 0 100px 20px 100px"><em>Document why, not how. &ndash; Venkat Subramaniam</em></blockquote>
+> <em>Document why, not how. &ndash; Venkat Subramaniam</em>
 
 Following this logic, we can now change our comment to explain <em>why</em> we are iterating from the range 0 to 9:
 
