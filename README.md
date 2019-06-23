@@ -85,8 +85,8 @@ for i := 0; i < 10; i++ {
 Now we can understand why we are iterating and we can tell what we are doing, by reading the code. The worrying part about this comment is, that this probably should be necessary to express in prose. We can quite easily express this directly in our code instead:
 
 ```go
-for worker_id := 0; worker_id < 10; worker_id++ {
-  instantiateThread(worker_id)
+for workerID := 0; workerID < 10; workerID++ {
+  instantiateThread(workerID)
 }
 ```
 
