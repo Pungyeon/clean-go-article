@@ -419,9 +419,9 @@ We'll use this idea of wrapping functions to introduce more clean and safe code 
 Related resource: [RabbitMQ Go tutorial](#https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
 
 ### Variable Scope
-Now, let's go back one step, back to the idea of writing smaller functions. This has another nice side-effect, which we didn't cover in the previous chapter:  Writing smaller function can typically eliminate using longer lasting mutable variables. Writing code with global variables, is a practice of the past, it doesn't belong in clean code. Now, why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then, by definition, it's value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... This is a headache for everyone. This is yet another example of a trivial problem, which is exacerbate, when the codebase expands. Let's, look at a short example of how even larger scoped (not global) variables can cause problems. 
+Now, let's take a step back and revisit the idea of writing smaller functions. This has another nice side effect that we didn't cover in the previous chapter:  Writing smaller function can typically eliminate reliance on mutable variables that leak into the global scope. Writing code with global variables is a practice of the past&mdash;it doesn't belong in clean code. But why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then by definition, its value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... And that's a headache for everyone. This is yet another example of a trivial problem that's exacerbated when the codebase expands.
 
-Larger scoped variables, also introduce the issue of variable shadowing as shown int he code taken from an article named: [`Golang scope issue - A feature bug: Shadow Variables`](https://idiallo.com/blog/golang-scopes):
+Let's look at a short example of how non-global variables with an even larger scope can cause problems. These variables also introduce the issue of <strong>variable shadowing</strong>, as demonstrated in the code taken from an article titled [`Golang scope issue`](https://idiallo.com/blog/golang-scopes):
 
 ```go
 func doComplex() (string, error) {
@@ -451,11 +451,13 @@ func main() {
 }
 ```
 
-The problem with this code, from a quick skim, it seems like that the `var val string` value, should be printed out as: `Success` by the end of the `main` function. Unfortunately, this is not the case. The reason for this is, the line:
+What's the problem with this code? From a quick skim, it seems the `var val string` value should be printed out as `Success` by the end of the `main` function. Unfortunately, this is not the case. The reason for this lies in the following line:
 
-> val, err := doComplex()
+```go
+val, err := doComplex()
+```
 
-This declares a new variable `val` in the the switch case `32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that the Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable largely scoped variable, is completely unnecessary. If we do a **very** simple refactor, we will no longer have this issue:
+This declares a new variable `val` in the the switch case `32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable, largely scoped variable is completely unnecessary. If we do a <strong>very</strong> simple refactor, we will no longer have this issue:
 
 ```go
 func getStringResult(num int) (string, error) {
@@ -482,9 +484,9 @@ func main() {
 }
 ```
 
-After our refactor, `val` is no longer mutated and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger more complex systems, it can be impossible to figure out, why errors are happening. We don't want this to happen. Not only because we generally dislike errors happening in software, but it is also disrespectful to our colleagues, and ourselves, that we are potentially wasting each others live's, having to debug this type of code. Let's take responsibility ourselves, rather than blaming the variable declaration syntax in Go.
+After our refactor, `val` is no longer modified, and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger, more complex systems, it can be impossible to figure out why errors are happening. We don't want this to happen&mdash;not only because we generally dislike software errors but also because it's disrespectful to our colleagues, and ourselves; we are potentially wasting each others' time having to debug this type of code. Developers need to take responsibility for their own code rather than blaming these issues on the variable declaration syntax of a particular language like Go.
 
-On a side not, if the `// do something else` part is another attempt to mutate the `val` variable. We should extract whatever logic in there as a function, as well as the previous part of it. This way, instead of prolonging the mutational scope of our variables, we can just return a new value:
+On a side not, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
 
 ```go
 func getVal(num int) (string, error) {
@@ -508,11 +510,9 @@ func main() {
 
 ### Variable Declaration 
 
-Other than avoiding variable scope and mutability, we can also improve readability but keeping our variable declaration close to the logic. In C programming, it's common to see the following method for declaring variables:
+Other than avoiding issues with variable scope and mutability, we can also improve readability by declaring variables as close to their usage as possible. In C programming, it's common to see the following technique for declaring variables:
 
 ```go
-
-
 func main() {
   var err error
   var items []Item
@@ -528,7 +528,7 @@ func main() {
 }
 ```
 
-This suffers from the same symptom as described in variable scope. Even though that these variables might not actually be re-assigned at any point, this kind of style, will keep the readers on their toes, in all the wrong ways. Much like computer memory, our brain has a limited amount to allocate from. Having to keep track of which variables could be mutated and whether or not something will mutate these items, will only make it more difficult to get a good overview of what is happening in the code. Figuring out the eventually returned value, can be a nightmare. Therefore, to makes this easier for our readers, which could potentially be a future version of ourselves, it is good practice to declare variables as close to their usage as possible:
+This suffers from the same symptom as described in our discussion of variable scope. Even though these variables might not actually be reassigned at any point, this kind of coding style keeps the readers on their toes, in all the wrong ways. Much like computer memory, our brain has a limited capacity. Having to keep track of which variables are mutable and whether or not a particular fragment of code will mutate them makes it more difficult to understand what the code is doing. Figuring out the eventually returned value can be a nightmare. Therefore, to makes this easier for our readers (and our future selves), it's recommended that you declare variables as close to their usage as possible:
 
 ```go
 func main() {
@@ -546,7 +546,7 @@ func main() {
 }
 ```
 
-However, we can do even better than this, by invoking the function directly on declaration. This makes it much clearer, that the function logic is associated with the declared variable, which is not as clear in the previous example.
+However, we can do even better by invoking the function directly after it's declared. This makes it much clearer that the function logic is associated with the declared variable, which is not as clear in the previous example:
 
 ```go
 func main() {
@@ -562,7 +562,7 @@ func main() {
 }
 ```
 
-And coming full circle, we can move the anonymous function, to make it a named function instead:
+And coming full circle, we can move the anonymous function to make it a named function instead:
 
 ```go
 func main() {
@@ -580,13 +580,13 @@ func NewSenderChannel() chan Item {
 }
 ```
 
-It is still clear that we are declaring a variable and the logic, and the logic associated with the returned channel. Unlike, the first example. This makes it easier to traverse code and understand the responsibility of each variable.
+It is still clear that we are declaring a variable, and the logic associated with the returned channel is simple, unlike in the first example. This makes it easier to traverse the code and understand the role of each variable.
 
-Of course, this doesn't actually limit us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means, that we will have to restrain ourselves from mutating this variable at a later point in the code.
+Of course, this doesn't actually prevent us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means that we'll have to restrain ourselves from mutating this variable at a later point in the code.
 
-> NOTE: The keyword `const` does exist, but are limited for use on primitive types. 
+> NOTE: The keyword `const` does exist but is limited in use to primitive types only.
 
-One way of getting around this, which at least will limit the mutability of a variable to a package level. Is to create a structure, with the variable as a private property. This private property is, thenceforth, only accessible through other methods of this wrapping structure. Expanding on our channel example, this would look something like the following:
+One way of getting around this can at least limit the mutability of a variable to the package level. It involves creating a structure with the variable as a private property. This private property is thenceforth only accessible through other methods provided by this wrapping structure. Expanding on our channel example, this would look something like the following:
 
 ```go
 type Sender struct {
@@ -604,7 +604,7 @@ func (s *Sender) Send(item Item) {
 }
 ```
 
-We have now ensured, that the `sender` property of our `Sender` struct, is never mutated. At least not, from outside of the package. As of writing this document, this is the only way of creating publicly immutable non-primitive variables. It's a little verbose, but it's truly worth the effort, to ensure that we don't end up with strange bugs, that could be the outcome of mutating properties of our structure. 
+We have now ensured that the `sender` property of our `Sender` struct is never mutated&mdash;at least not from outside of the package. As of writing this document, this is the only way of creating publicly immutable non-primitive variables. It's a little verbose, but it's truly worth the effort to ensure that we don't end up with strange bugs resulting from accidental variable modification. 
 
 ```go
 func main() {
@@ -613,9 +613,9 @@ func main() {
 }
 ```
 
-Looking at the example above, it's clear how this also simplifies the usage of our package. This way of hiding the implementation, is not only beneficial for the maintainers of the package, but also the users of the package. Now, when initialising and using the `Sender` structure, there is no concern of the implementation. This opens up, for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact users of the package have. If we no longer wish to use a channel implementation in our package, we can easily change this, without breaking the usage of the `Send` method (as long as we adhere to it's current function signature).
+Looking at the example above, it's clear how this also simplifies the usage of our package. This way of hiding the implementation is beneficial not only for the maintainers of the package but also for the users. Now, when initialising and using the `Sender` structure, there is no concern over its implementation. This opens up for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact that users have with the package. If we no longer wish to use a channel implementation in our package, we can easily change this without breaking the usage of the `Send` method (as long as we adhere to its current function signature).
 
->  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](#https://www.youtube.com/watch?v=kJq81Y7OEx4)
+>  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](#https://www.youtube.com/watch?v=kJq81Y7OEx4).
 
 ## Clean Go
 
