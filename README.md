@@ -27,7 +27,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
     * [Variable Declaration](#Variable-Declaration)
     
 * [Clean Go](#Clean-Go)
-    * [Return Values](#Return-lValues) 
+    * [Return Values](#Return-Values) 
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Pointers in Go](#Pointers-in-Go)
