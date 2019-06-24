@@ -344,7 +344,7 @@ func GetItemIfActive(extension string) (Item, error) {
 
 Creating a good function naming structure makes it easier to read and understand the intent of the code. As we saw above, making our functions shorter helps us understand the function's logic. The last part of cleaning our functions involves understanding the context of the function input. With this comes another easy-to-follow rule: <strong>Function signatures should only contain one or two input parameters</strong>. In certain exceptional cases, three can be acceptable, but this is where we should start considering a refactor. Much like the rule that our functions should only be 5&ndash;8 lines long, this can seem quite extreme at first. However, I feel that this rule is much easier to justify.
 
-Take the following function from RabbitMQ's introduction tutorial to its Go library:
+Take the following function from [RabbitMQ's introduction tutorial to its Go library](https://www.rabbitmq.com/tutorials/tutorial-one-go.html):
 
 ```go
 q, err := ch.QueueDeclare(
@@ -417,8 +417,6 @@ func (rmqch *RMQChannel) QueueDeclare(opts QueueOptions) (Queue, error) {
 Basically, we create a new structure named `RMQChannel` that contains the `amqp.Channel` type, which has the `QueueDeclare` method. We then create our own version of this method, which essentially just calls the old version of the RabbitMQ library function. Our new method has all the advantages described before, and we achieved this without actually having to change any of the code in the RabbitMQ library.
 
 We'll use this idea of wrapping functions to introduce more clean and safe code later when discussing `interface{}`.
-
-Related resource: [RabbitMQ Go tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
 
 ### Variable Scope
 Now, let's take a step back and revisit the idea of writing smaller functions. This has another nice side effect that we didn't cover in the previous chapter:  Writing smaller function can typically eliminate reliance on mutable variables that leak into the global scope. Writing code with global variables is a practice of the past&mdash;it doesn't belong in clean code. But why is that?
