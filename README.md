@@ -91,8 +91,8 @@ Now we understand <em>why</em> we have a loop and can tell <em>what</em> we're d
 This still isn't what I'd consider clean code. The comment is worrying because it probably should not be necessary to express such an explanation in prose, assuming the code is well written (which it isn't). Technically, we're still saying what we're doing, not why we're doing it. We can easily express this "what" directly in our code by using more meaningful names:
 
 ```go
-for worker_id := 0; worker_id < 10; worker_id++ {
-  instantiateThread(worker_id)
+for workerID := 0; workerID < 10; workerID++ {
+  instantiateThread(workerID)
 }
 ```
 
