@@ -134,7 +134,7 @@ func Parse(filepath string) (Config, error) {
 }
 ```
 
-Here, we've clearly distinguished the nested function calls from their parent without being overly specific. This allows each nested function call to make sense on its own as well as within the context of the parent. On the other hand, if we had named the `parseJSON` function `json` instead, it couldn't possibly stand on its own&mdash;what about JSON? Are we parsing it? Creating a JSON object? Hopefully you get the point.
+Here, we've clearly distinguished the nested function calls from their parent without being overly specific. This allows each nested function call to make sense on its own as well as within the context of the parent. On the other hand, if we had named the `parseJSON` function `json` instead, it couldn't possibly stand on its own. What about JSON? Are we parsing it? Creating a JSON object? Hopefully you get the point.
 
 Notice that `fileExtension` is actually a little more specific. However, this is because its functionality is in fact quite specific in nature:
 
@@ -145,10 +145,10 @@ func fileExtension(filepath string) string {
 }
 ```
 
-This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdashmakes the code easier to follow and and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite our intention of trying to be clear! 
+This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdashmakes the code easier to follow and and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
 
 #### Variable Naming
-Rather interestingly, the opposite is true for variables. Unlike functions, our variables should be named from more to less specific the deeper the nesting progresses.
+Rather interestingly, the opposite is true for variables. Unlike functions, our variables should be named from more to less specific the deeper we go into nested scopes.
 
 > <em>You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'. &ndash; Dave Cheney</em>
 
@@ -200,7 +200,9 @@ Now that we know some best practices for naming our variables and functions, as 
 
 > <em>How small should a function be? Smaller than that! &ndash; Robert C. Martin</em>
 
-When writing clean code, our primary goal is to make our code easily digestible. The most effective way to do this is to make our functions as short as possible. It's important to understand that this isn't necessarily to avoid code duplication. The more important reason is to improve code comprehension. It can help to look at a function's description at a very high level to understand this:
+When writing clean code, our primary goal is to make our code easily digestible. The most effective way to do this is to make our functions as short as possible. It's important to understand that we don't necessarily do this to avoid code duplication. The more important reason is to improve <em>code comprehension</em>.
+
+It can help to look at a function's description at a very high level to understand this better:
 
 ```
 fn GetItem:
@@ -215,7 +217,7 @@ By writing short functions (which are typically 5&ndash;8 lines in Go), we can c
 ```go
 var (
     NullItem = Item{}
-    ErrInsufficientPrivliges = errors.New("user does not have sufficient priviliges")
+    ErrInsufficientPrivileges = errors.New("user does not have sufficient privileges")
 )
 
 func GetItem(ctx context.Context, json []bytes) (Item, error) {
@@ -257,7 +259,7 @@ func GetItem(extension string) (Item, error) {
 }
 ```
 
-First, indentation hells makes it difficult for other developers to understand the flow of your code. Second, if the logic in our `if` statements expands, it'll become exponentially more difficult to figure out which statement returns what (and to ensure that all paths return some value). Yet another problem is that this deep nesting of conditional statements forces the reader to frequently scroll and keep track of many logical states in their head. It also makes it more difficult to test the code and catch bugs because there are so many different nested possibilities that you have to account for.
+First, indentation hell makes it difficult for other developers to understand the flow of your code. Second, if the logic in our `if` statements expands, it'll become exponentially more difficult to figure out which statement returns what (and to ensure that all paths return some value). Yet another problem is that this deep nesting of conditional statements forces the reader to frequently scroll and keep track of many logical states in their head. It also makes it more difficult to test the code and catch bugs because there are so many different nested possibilities that you have to account for.
 
 Indentation hell can result in reader fatigue if a developer has to constantly parse unwieldy code like the sample above. Naturally, this is something we want to avoid at all costs.
 
@@ -324,11 +326,11 @@ func getItemFromCache(reference string) (Item, bool) {
 }
 ```
 
-As mentioned previously, indentation hell can make it difficult to test our code. On the other hand, when we split up our functions like we did above, it becomes much easier to get 100% code coverage because we're dealing with functions that are maybe only 4 lines (written by a sane person) each, as opposed to 400. That's just common sense.
+As mentioned previously, indentation hell can make it difficult to test our code. On the other hand, when we split up our functions like we did above, it becomes much easier to get 100% code coverage because we're dealing with functions that are maybe only 4 lines each (when written by a sane person), as opposed to 400. That's just common sense.
 
-> Note: For production code, one should elaborate on the code even further by returning errors instead of a `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, returning `bool` values will suffice for now. Examples of returning errors more explicitly will be explained in more detail later.
+> Note: For production code, one should elaborate on the code even further by returning errors instead of `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, returning `bool` values will suffice for now. Examples of returning errors more explicitly will be explained in more detail later.
 
-You'll notice that the clean version of our function has resulted in more lines of code. However, the code itself is far easier to read. It's layered in an onion-style fashion, where we can ignore "layers" that we aren't interested in and simply peel back the ones that we do want to examine. This makes it easier to understand low-level functionality because we only have to account for maybe 3&ndash;5 lines at a time.
+You'll notice that the clean version of our function has resulted in more lines of code. However, the code itself is far easier to read. It's layered in an onion-style fashion, where we can ignore "layers" that we aren't interested in and simply peel back the ones that we do want to examine. This makes it easier to understand low-level functionality because we only have to read maybe 3&ndash;5 lines at a time.
 
 This example illustrates that we cannot measure the cleanliness of our code by the number of lines it uses. The first version of the code was certainly much shorter. However, it was <em>artificially</em> short and very difficult to read. In most cases, cleaning code will initially expand the existing codebase in terms of the number of lines. But this is highly preferable to the alternative of having messy, convoluted logic. If you're ever in doubt about this, just consider how you feel about the following function, which does exactly the same thing as our code but only uses two lines:
 
@@ -340,7 +342,7 @@ func GetItemIfActive(extension string) (Item, error) {
 
 #### Function Signatures
 
-Creating a good function naming structure makes it easier to read and understand the intent of the code. As we saw above, making our functions shorter helps us understand the function's logic. The last part of cleaning our functions involves understanding the context of the function input. With this comes another easy-to-follow rule: <strong>Function signatures should only contain one or two input parameters</strong>. In certain exceptional cases, three can be acceptable, but this is where we should start considering a refactor. Much like the rule that our functions should only be 5&ndash;8 lines long, this can seem quite extreme at first. However, I feel that this rule is much easier to prove.
+Creating a good function naming structure makes it easier to read and understand the intent of the code. As we saw above, making our functions shorter helps us understand the function's logic. The last part of cleaning our functions involves understanding the context of the function input. With this comes another easy-to-follow rule: <strong>Function signatures should only contain one or two input parameters</strong>. In certain exceptional cases, three can be acceptable, but this is where we should start considering a refactor. Much like the rule that our functions should only be 5&ndash;8 lines long, this can seem quite extreme at first. However, I feel that this rule is much easier to justify.
 
 Take the following function from RabbitMQ's introduction tutorial to its Go library:
 
@@ -361,7 +363,7 @@ The function `QueueDeclare` takes six input parameters, which is quite a lot. It
 q, err := ch.QueueDeclare("hello", false, false, false, false, nil)
 ```
 
-Now, without looking at the commented version, try to remember what the fourth and fifth `false` arguments represent. It's impossible, right? You will inevitably forget at some point. This can lead to costly mistakes and bugs that are difficult to correct. The mistakes might even occur through incorrect comments. Imagine labeling the wrong input parameter. Correcting this mistake will be unbearably difficult to correct, especially when familiarity with the code has deteriorated over time or was low to begin with. Therefore, it is recommended to replace these input parameters with an 'Options' `struct` instead:
+Now, without looking at the commented version, try to remember what the fourth and fifth `false` arguments represent. It's impossible, right? You will inevitably forget at some point. This can lead to costly mistakes and bugs that are difficult to correct. The mistakes might even occur through incorrect comments&mdash;imagine labeling the wrong input parameter. Correcting this mistake will be unbearably difficult to correct, especially when familiarity with the code has deteriorated over time or was low to begin with. Therefore, it is recommended to replace these input parameters with an 'Options' `struct` instead:
 
 ```go
 type QueueOptions struct {
@@ -383,7 +385,7 @@ q, err := ch.QueueDeclare(QueueOptions{
 })
 ```
 
-This solves both the problem of omitting comments and that of accidentally labeling the variables incorrectly. Of course, we can still confuse properties with the wrong value, but in these cases, it will be much easier to determine where our mistake lies within the code. The ordering of the properties also doesn't matter anymore, so incorrectly ordering the input values is no longer a concern. The last added bonus of this technique is that we can use our Option `struct` to infer the default values of our function's input parameters. When structures in Go are declared, all properties are initialised to their default value. This means that our `QueueDeclare` option can actually be invoked in the following way:
+This solves two problems: misusing comments, and accidentally labeling the variables incorrectly. Of course, we can still confuse properties with the wrong value, but in these cases, it will be much easier to determine where our mistake lies within the code. The ordering of the properties also doesn't matter anymore, so incorrectly ordering the input values is no longer a concern. The last added bonus of this technique is that we can use our Option `struct` to infer the default values of our function's input parameters. When structures in Go are declared, all properties are initialised to their default value. This means that our `QueueDeclare` option can actually be invoked in the following way:
 
 ```go
 q, err := ch.QueueDeclare(QueueOptions{
@@ -391,7 +393,7 @@ q, err := ch.QueueDeclare(QueueOptions{
 })
 ```
 
-The rest of the values are initialised to their default value of `false` (except for `Arguments`, which as an interface has a default value of `nil`). Not only are we much safer with this approach, but we are also much clear with our intentions. In this case, we could actually write less code. This is an all-around win for everyone on the project.
+The rest of the values are initialised to their default value of `false` (except for `Arguments`, which as an interface has a default value of `nil`). Not only are we much safer with this approach, but we are also much clearer with our intentions. In this case, we could actually write less code. This is an all-around win for everyone on the project.
 
 One final note on this: It's not always possible to change a function's signature. In this case, for example, we don't actually have control over our `QueueDeclare` function signature because it's from the RabbitMQ library. It's not our code, so we can't change it. However, we can wrap these functions to suit our purposes:
 
@@ -416,12 +418,14 @@ Basically, we create a new structure named `RMQChannel` that contains the `amqp.
 
 We'll use this idea of wrapping functions to introduce more clean and safe code later when discussing `interface{}`.
 
-Related resource: [RabbitMQ Go tutorial](#https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
+Related resource: [RabbitMQ Go tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-go.html)
 
 ### Variable Scope
-Now, let's take a step back and revisit the idea of writing smaller functions. This has another nice side effect that we didn't cover in the previous chapter:  Writing smaller function can typically eliminate reliance on mutable variables that leak into the global scope. Writing code with global variables is a practice of the past&mdash;it doesn't belong in clean code. But why is that? Well, the problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then by definition, its value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... And that's a headache for everyone. This is yet another example of a trivial problem that's exacerbated when the codebase expands.
+Now, let's take a step back and revisit the idea of writing smaller functions. This has another nice side effect that we didn't cover in the previous chapter:  Writing smaller function can typically eliminate reliance on mutable variables that leak into the global scope. Writing code with global variables is a practice of the past&mdash;it doesn't belong in clean code. But why is that?
 
-Let's look at a short example of how non-global variables with an even larger scope can cause problems. These variables also introduce the issue of <strong>variable shadowing</strong>, as demonstrated in the code taken from an article titled [`Golang scope issue`](https://idiallo.com/blog/golang-scopes):
+The problem with using global variables is that we make it very difficult for programmers to understand the current state of a variable. If a variable is global and mutable, then by definition, its value can be changed by any part of the codebase. At no point can you guarantee that this variable is going to be a specific value... And that's a headache for everyone. This is yet another example of a trivial problem that's exacerbated when the codebase expands.
+
+Let's look at a short example of how non-global variables with a large scope can cause problems. These variables also introduce the issue of <strong>variable shadowing</strong>, as demonstrated in the code taken from an article titled [Golang scope issue](https://idiallo.com/blog/golang-scopes):
 
 ```go
 func doComplex() (string, error) {
@@ -457,7 +461,7 @@ What's the problem with this code? From a quick skim, it seems the `var val stri
 val, err := doComplex()
 ```
 
-This declares a new variable `val` in the the switch case `32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable, largely scoped variable is completely unnecessary. If we do a <strong>very</strong> simple refactor, we will no longer have this issue:
+This declares a new variable `val` in the switch's `case 32` scope and has nothing to do with the variable declared in the first line of `main`. Of course, it can be argued that Go syntax is a little tricky, which I don't necessarily disagree with, but there is a much worse issue at hand. The declaration of `var val string` as a mutable, largely scoped variable is completely unnecessary. If we do a <strong>very</strong> simple refactor, we will no longer have this issue:
 
 ```go
 func getStringResult(num int) (string, error) {
@@ -484,7 +488,7 @@ func main() {
 }
 ```
 
-After our refactor, `val` is no longer modified, and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger, more complex systems, it can be impossible to figure out why errors are happening. We don't want this to happen&mdash;not only because we generally dislike software errors but also because it's disrespectful to our colleagues, and ourselves; we are potentially wasting each others' time having to debug this type of code. Developers need to take responsibility for their own code rather than blaming these issues on the variable declaration syntax of a particular language like Go.
+After our refactor, `val` is no longer modified, and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger, more complex systems, it can be impossible to figure out why errors are occurring. We don't want this to happen&mdash;not only because we generally dislike software errors but also because it's disrespectful to our colleagues, and ourselves; we are potentially wasting each others' time having to debug this type of code. Developers need to take responsibility for their own code rather than blaming these issues on the variable declaration syntax of a particular language like Go.
 
 On a side not, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
 
@@ -510,7 +514,7 @@ func main() {
 
 ### Variable Declaration 
 
-Other than avoiding issues with variable scope and mutability, we can also improve readability by declaring variables as close to their usage as possible. In C programming, it's common to see the following technique for declaring variables:
+Other than avoiding issues with variable scope and mutability, we can also improve readability by declaring variables as close to their usage as possible. In C programming, it's common to see the following approach to declaring variables:
 
 ```go
 func main() {
@@ -528,7 +532,7 @@ func main() {
 }
 ```
 
-This suffers from the same symptom as described in our discussion of variable scope. Even though these variables might not actually be reassigned at any point, this kind of coding style keeps the readers on their toes, in all the wrong ways. Much like computer memory, our brain has a limited capacity. Having to keep track of which variables are mutable and whether or not a particular fragment of code will mutate them makes it more difficult to understand what the code is doing. Figuring out the eventually returned value can be a nightmare. Therefore, to makes this easier for our readers (and our future selves), it's recommended that you declare variables as close to their usage as possible:
+This suffers from the same symptom as described in our discussion of variable scope. Even though these variables might not actually be reassigned at any point, this kind of coding style keeps the readers on their toes, in all the wrong ways. Much like computer memory, our brain's short-term memory has a limited capacity. Having to keep track of which variables are mutable and whether or not a particular fragment of code will mutate them makes it more difficult to understand what the code is doing. Figuring out the eventually returned value can be a nightmare. Therefore, to makes this easier for our readers (and our future selves), it's recommended that you declare variables as close to their usage as possible:
 
 ```go
 func main() {
@@ -546,7 +550,7 @@ func main() {
 }
 ```
 
-However, we can do even better by invoking the function directly after it's declared. This makes it much clearer that the function logic is associated with the declared variable, which is not as clear in the previous example:
+However, we can do even better by invoking the function directly after it's declared. This makes it much clearer that the function logic is associated with the declared variable:
 
 ```go
 func main() {
@@ -582,11 +586,11 @@ func NewSenderChannel() chan Item {
 
 It is still clear that we are declaring a variable, and the logic associated with the returned channel is simple, unlike in the first example. This makes it easier to traverse the code and understand the role of each variable.
 
-Of course, this doesn't actually prevent us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means that we'll have to restrain ourselves from mutating this variable at a later point in the code.
+Of course, this doesn't actually prevent us from mutating our `sender` variable. There is nothing that we can do about this, as there is no way of declaring a `const struct` or `static` variables in Go. This means that we'll have to restrain ourselves from modifying this variable at a later point in the code.
 
 > NOTE: The keyword `const` does exist but is limited in use to primitive types only.
 
-One way of getting around this can at least limit the mutability of a variable to the package level. It involves creating a structure with the variable as a private property. This private property is thenceforth only accessible through other methods provided by this wrapping structure. Expanding on our channel example, this would look something like the following:
+One way of getting around this can at least limit the mutability of a variable to the package level. The trick involves creating a structure with the variable as a private property. This private property is thenceforth only accessible through other methods provided by this wrapping structure. Expanding on our channel example, this would look something like the following:
 
 ```go
 type Sender struct {
@@ -615,7 +619,7 @@ func main() {
 
 Looking at the example above, it's clear how this also simplifies the usage of our package. This way of hiding the implementation is beneficial not only for the maintainers of the package but also for the users. Now, when initialising and using the `Sender` structure, there is no concern over its implementation. This opens up for a much looser architecture. Because our users aren't concerned with the implementation, we are free to change it at any point, since we have reduced the point of contact that users have with the package. If we no longer wish to use a channel implementation in our package, we can easily change this without breaking the usage of the `Send` method (as long as we adhere to its current function signature).
 
->  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](#https://www.youtube.com/watch?v=kJq81Y7OEx4).
+>  NOTE: There is a fantastic explanation of how to handle the abstraction in client libraries, taken from the talk [AWS re:Invent 2017: Embracing Change without Breaking the World (DEV319)](https://www.youtube.com/watch?v=kJq81Y7OEx4).
 
 ## Clean Go
 
