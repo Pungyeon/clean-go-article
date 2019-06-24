@@ -1,22 +1,22 @@
 # Clean Go Code
 
-## Preface
+## Preface: Why Write Clean Code?
 
-The motivation behind writing this document, is to create a resource (and eventually a reference) for the Go community, which will help developers write cleaner code. This benefits every one of us. Whether we are writing code by ourselves, or writing code in larger teams. Establishing good paradigms for writing clean code and ensuring that this is available for everyone, will help prevent many meaningless hours on trying to understand and parse others (and our own) code.  
+This document is a reference for the Go community that aims to help developers write cleaner code. Whether you're working on a personal project or as part of a larger team, writing clean code is an important skill to have. Establishing good paradigms and consistent, accessible standards for writing clean code can help prevent developers from wasting many meaningless hours on trying to understand their own (or others') work.
 
-<p align=center style="font-style: italic">We don’t read code, we <b>decode</b> it - Peter Seibel </p>
+> <em>We don’t read code, we <b>decode</b> it &ndash; Peter Seibel</em>
 
-The matter of the fact is, as Peter Seibel put it. We decode code and we honestly can't help encoding it, in some way, shape or form. This document, will be a precursor for us, to make sure that our encoding method is effective. We want our code to be usable, readable and maintainable.
+As developers, we're sometimes tempted to write code in a way that's convenient for the time being without regard for best practices; this makes code reviews and testing more difficult. In a sense, we're <em>encoding</em>&mdash;and, in doing so, making it more difficult for others to decode our work. But we want our code to be usable, readable, and maintainable. And that requires coding the <em>right</em> way, not the easy way.
 
-This document will start with a simple and short introduction to the fundamentals behind writing clean code and will thereafter transition into concrete refactoring examples, more specific to Go. The aim of the document is to deliver the message of how easy it is to write clean code and how easy is it to write code, when it's clean.
+This document begins with a simple and short introduction to the fundamentals of writing clean code. Later, we'll discuss concrete refactoring examples specific to Go.
 
 ##### A short word on `gofmt`
-I would like to take a few sentences to make my stance on `gofmt` very clear. There are extremely many things that I disagree with, when it comes to `gofmt`. I prefer snake case over camel case, I quite like my constant variables to be upper case and I also have many opinions on bracket placement. *That being said*: `gofmt` is what enables us to have a common standard for writing Go code. All Go code, will look somewhat similar and it ensures that no Go code becomes too exoteric. I think that this is overall extremely positive. I appreciate immensely, that all Go programmers are somewhat restricted to write similar code, despite being very unhappy with some of the formatting rules. In my opinion, I value homogenous code over complete expressive freedom.
+I'd like to take a few sentences to clarify my stance on `gofmt` because there are plenty of things I disagree with when it comes to this tool. I prefer snake case over camel case, and I quite like my constant variables to be uppercase. And, naturally, I also have many opinions on bracket placement. *That being said*, `gofmt` does allow us to have a common standard for writing Go code, and that's a great thing. As a developer myself, I can certainly appreciate that Go programmers may feel somewhat restricted by `gofmt`, especially if they disagree with some of its rules. But in my opinion, homogeneous code is more important than having complete expressive freedom.
 
-## Context
+## Table of Contents
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
-    * [Test Driven Development](#Test-Driven-Development)
-    * [Naming](#Naming)
+    * [Test-Driven Development](#Test-Driven-Development)
+    * [Naming Conventions](#Naming)
     * * [Comments](#Comments)
     	* [Function Naming](#Function-Naming)
     	* [Variable Naming](#Variable-Naming)
@@ -38,27 +38,31 @@ I would like to take a few sentences to make my stance on `gofmt` very clear. Th
 
 ## Introduction to Clean Code
 
-Clean Code, is the pragmatic concept of ensuring readable and maintainable code. Clean Code establishes trust in the codebase and will steer developers away from introducing bugs. Clean Code will also establish much more stability in development speed, which typically will take a nose dive in the later stages of projects, due to higher risk of increasing bugs when introducing changes, as the codebase expands. 
+Clean code is the pragmatic concept of promoting readable and maintainable software. Clean code establishes trust in the codebase and helps minimize the chances of careless bugs being introduced. It also helps developers maintain their agility, which typically plummets as the codebase expands due to the increased risk of introducing bugs.
 
-### Test Driven Development
+### Test-Driven Development
 
-The core of creating clean code stems from creating good tests. Writing good tests helps create clean code, as it invites developers to think about the outcomes and test coverage of functions / functionality. It's easier to test a function that is only 4 lines, rather than a function, which is 40. In the same manner, a function which is 4 lines, is typically easier to understand than a function of 40 lines. Therefore, when using test driven development, the resulting code is much more likely to be of a cleaner nature. 
+Test-driven development is the practice of testing your code frequently throughout short development cycles or sprints. It ultimately contributes to code cleanliness by inviting developers to question the functionality and purpose of their code. To make testing easier, developers are encouraged to write short functions that only do one thing. For example, it's arguably much easier to test (and understand) a function that's only 4 lines long than one that's 40.
 
-The next important part of test driven development, which is very closely related to clean code, is the TDD cycle:
+Test-driven development consists of the following cycle:
 
-1. Write a test which fails
-2. Make the test pass
-3. Refactor code
+1. Write (or execute) a test
+2. If the test fails, make it pass
+3. Refactor your code accordingly
 4. Repeat
 
-Step three of the cycle, ensures that we can refactor our code as we are writing it. The tests ensure that our refactor doesn't change the outcome of our functions and we can therefore, essentially, go crazy refactoring our code to be as clean as possible. As we go along, and our codebase expands, we will still have our tests, to make sure that our refactoring will not affect the outcome of our functions.
+Testing and refactoring are intertwined in this process. As you refactor your code to make it more understandable or maintainable, you need to test your changes thoroughly to ensure that you haven't altered the behavior of your functions. This can be incredibly useful as the codebase grows.
 
-###  Naming
+###  Naming Conventions
 
 #### Comments
-First things first: I want to address the topic of comments. Unnecessary comments are the biggest indicator of code smell. Comments are usually added into a code base, because something is so unclear, that it's deemed necessary to explain with a comment. Of course, this is not always the case. In Go, all according to `gofmt` all public variables and functions, should be annotated. I think this is absolutely fine, as this makes documentation easy. However, I therefore always want to distinguish between comments which enable auto-generated documentation and all other comments. Annotation comments, for documentation, should be written like documentation. They should be high level and concern the logical implementation as little as possible, other than on the highest abstraction level. 
+First things first: I want to address the topic of comments. Unnecessary comments are the biggest indicator of code smell. Comments are usually added to a codebase because something is so unclear that it's necessary to explain it so that the reader can understand what's going on. But this isn't always the case, and comments tend to be misused.
 
-The reasoning behind this, is that there are other ways to explain code and ensure that code is being written comprehensibly and expressively. If the code is neither of the two, some people find it acceptable to replace this, with a comment explaining the logic. The matter of the fact is, that most people will not read comments, because it's very intrusive to the experience of reading code. However, let's start from the beginning. Bad comments:
+In Go, according to `gofmt`, <em>all</em> public variables and functions should be annotated. I think this is absolutely fine, as it gives us consistent rules for documenting our code. However, I always want to distinguish between comments that enable auto-generated documentation and <em>all other</em> comments. Annotation comments, for documentation, should be written like documentation&mdash;they should be at a high level of abstraction and concern the logical implementation of the code as little as possible.
+
+I say this because there are other ways to explain code and ensure that the code is being written comprehensibly and expressively. If the code is neither of those, some people find it acceptable to introduce a comment explaining the convoluted logic. The matter of the fact is that most people will not read comments because they're very intrusive to the experience of reading code.
+
+Let's take a step back and look at some concrete examples. Here's how you <em>shouldn't</em> comment your code:
 
 ```go
 // iterate over the range 0 to 9 
@@ -69,11 +73,11 @@ for i := 0; i < 10; i++ {
 }
 ```
 
-This comment, is what I call a tutorial comment. It's pretty common in tutorials, which explain the low level functionality of a language (or programming on a more general level). The matter of the fact is, that these comments are absolutely useless in production code. Hopefully, we aren't collaborating with other programmers, who don't understand that principles behind the language we have chosen to write in, or even worse, don't understand simple principles of programming. As programmers, we don't have to read the comment, we know this is happening, by reading the code. Hence the proverb:
+This is what I like to call a <strong>tutorial comment</strong>; it's fairly common in tutorials, which often explain the low-level functionality of a language (or programming in general). While these comments may be helpful for beginners, they're absolutely useless in production code. Hopefully, we aren't collaborating with programmers who don't understand something as simple as a looping construct by the time they've begun working on a development team. As programmers, we shouldn't have to read the comment to understand what's going on&mdash;we know that we're iterating over the range 0 to 9 because we can simply read the code. Hence the proverb:
 
-<p align=center style="margin: 0 100px 20px 100px; font-style: italic">"Document why, not how." - Venkat Subramaniam</p>
+> <em>Document why, not how. &ndash; Venkat Subramaniam</em>
 
-Following this logic, we can now change our comment, to explain why we are iterating from the range zero to nine:
+Following this logic, we can now change our comment to explain <em>why</em> we are iterating from the range 0 to 9:
 
 ```go
 // instatiate 10 threads to handle upcoming work load
@@ -82,7 +86,9 @@ for i := 0; i < 10; i++ {
 }
 ```
 
-Now we can understand why we are iterating and we can tell what we are doing, by reading the code. The worrying part about this comment is, that this probably should be necessary to express in prose. We can quite easily express this directly in our code instead:
+Now we understand <em>why</em> we have a loop and can tell <em>what</em> we're doing by simply reading the code... Sort of.
+
+This still isn't what I'd consider clean code. The comment is worrying because it probably should not be necessary to express such an explanation in prose, assuming the code is well written (which it isn't). Technically, we're still saying what we're doing, not why we're doing it. We can easily express this "what" directly in our code by using more meaningful names:
 
 ```go
 for worker_id := 0; worker_id < 10; worker_id++ {
@@ -90,13 +96,13 @@ for worker_id := 0; worker_id < 10; worker_id++ {
 }
 ```
 
-With just a few changes of our variable and function names, we have established explanations of our action, directly in our code. This is much clearer for the reader, because the reader won't have to read the comment and then map the prose comment to the code. Instead, they can read the code and immediately understand everything which is going on. 
+With just a few changes to our variable and function names, we've managed to explain what we're doing directly in our code. This is much clearer for the reader because they won't have to read the comment and then map the prose to the code. Instead, they can simply read the code to understand what it's doing.
 
-Of course, this example, was relatively easy. It's unfortunately not always this easy and writing clear and expressive code becomes increasingly difficult, together with code complexity. So let's have a look at some methods, which will help make this task easier. 
+Of course, this was a relatively trivial example. Writing clear and expressive code is unfortunately not always so easy; it can become increasingly difficult as the codebase itself grows in complexity. The more you practice writing comments in this mindset and avoid explaining what you're doing, the cleaner your code will become.
 
 #### Function Naming
 
-We will start by discussing the naming of our functions. The general rule for function naming is really simple: The more specific the function, the more general the name. In other words, this means that we want to start with a very broad and short function name, such as `Run` or `Parse`, which describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+Let's now move on to function naming conventions. The general rule here is really simple: The more specific the function, the more general its name. In other words,  we want to start with a very broad and short function name, such as `Run` or `Parse`, that describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
 func main() {
