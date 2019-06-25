@@ -60,7 +60,7 @@ First things first: I want to address the topic of comments. Unnecessary comment
 
 In Go, according to `gofmt`, <em>all</em> public variables and functions should be annotated. I think this is absolutely fine, as it gives us consistent rules for documenting our code. However, I always want to distinguish between comments that enable auto-generated documentation and <em>all other</em> comments. Annotation comments, for documentation, should be written like documentation&mdash;they should be at a high level of abstraction and concern the logical implementation of the code as little as possible.
 
-I say this because there are other ways to explain code and ensure that it's being written comprehensibly and expressively. If the code is neither of those, some people find it acceptable to introduce a comment explaining the convoluted logic. Most people simply won't read comments because they tend to be very intrusive to the experience of reviewing code.
+I say this because there are other ways to explain code and ensure that it's being written comprehensibly and expressively. If the code is neither of those, some people find it acceptable to introduce a comment explaining the convoluted logic. Most people simply won't read comments, as they tend to be very intrusive to the experience of reviewing code.
 
 Let's take a step back and look at some concrete examples. Here's how you <em>shouldn't</em> comment your code:
 
