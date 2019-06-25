@@ -134,7 +134,7 @@ func Parse(filepath string) (Config, error) {
 }
 ```
 
-Here, we've clearly distinguished the nested function calls from their parent without being overly specific. This allows each nested function call to make sense on its own as well as within the context of the parent. On the other hand, if we had named the `parseJSON` function `json` instead, it couldn't possibly stand on its own. What about JSON? Are we parsing it? Creating a JSON object? Hopefully you get the point.
+Here, we've clearly distinguished the nested function calls from their parent without being overly specific. This allows each nested function call to make sense on its own as well as within the context of the parent. On the other hand, if we had named the `parseJSON` function `json` instead, it couldn't possibly stand on its own. The functionality would become lost in the name, and we would no longer be able to tell whether this function is parsing, creating, or marshalling JSON. 
 
 Notice that `fileExtension` is actually a little more specific. However, this is because its functionality is in fact quite specific in nature:
 
@@ -152,7 +152,7 @@ Rather interestingly, the opposite is true for variables. Unlike functions, our 
 
 > <em>You shouldn’t name your variables after their types for the same reason you wouldn’t name your pets 'dog' or 'cat'. &ndash; Dave Cheney</em>
 
-Why should our variable names become less specific as we travel deeper into a function's scope? Simply put, as a variable's scope becomes smaller, it becomes increasingly clear for the reader what that variable represents, so there's no need to use a specific name. In the example of the previous function `fileExtension`, we could even shorten the name of the variable `segments` to `s` if we wanted to. The context of the variable is so clear that it's unnecessary to explain it any further with longer variable names. Another good example of this is in nested for loops:
+Why should our variable names become less specific as we travel deeper into a function's scope? Simply put, as a variable's scope becomes smaller, it becomes increasingly clear for the reader what that variable represents, thereby eliminating the need for specific naming. In the example of the previous function `fileExtension`, we could even shorten the name of the variable `segments` to `s` if we wanted to. The context of the variable is so clear that it's unnecessary to explain it any further with longer variable names. Another good example of this is in nested for loops:
 
 ```go
 func PrintBrandsInList(brands []BeerBrand) {
@@ -357,7 +357,7 @@ q, err := ch.QueueDeclare(
 )
 ```
 
-The function `QueueDeclare` takes six input parameters, which is quite a lot. It's possible to understand what this code does with some effort because of the comments. And therein lies the problem! As mentioned earlier, comments should be substituted with descriptive code. After all, there's nothing preventing us from invoking the `QueueDeclare` function without comments, making it look like this:
+The function `QueueDeclare` takes six input parameters, which is quite a lot. With some effort, it's possible to understand what this code does thanks to the comments. However, the comments are actually part of the problem&mdash;as mentioned earlier, they should be substituted with descriptive code whenever possible. After all, there's nothing preventing us from invoking the `QueueDeclare` function <em>without</em> comments:
 
 ```go
 q, err := ch.QueueDeclare("hello", false, false, false, false, nil)
@@ -548,7 +548,7 @@ func main() {
 }
 ```
 
-However, we can do even better by invoking the function directly after it's declared. This makes it much clearer that the function logic is associated with the declared variable:
+However, we can do even better by invoking the function directly after its declaration. This makes it much clearer that the function logic is associated with the declared variable:
 
 ```go
 func main() {
