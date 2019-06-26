@@ -31,7 +31,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Pointers in Go](#Pointers-in-Go)
-    * [Closures are Function Pointers](#Closures-are-Function-Pointers)
+    * [Closures Are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The empty `interface{}`](#The-empty-`interface{}`)
 * [Summary](#Summary)
@@ -621,7 +621,7 @@ Looking at the example above, it's clear how this also simplifies the usage of o
 
 ## Clean Go
 
-This section will focus less on the generic aspects of writing clean Go code and more on the specifics, with an emphasis on the underlying clean code principles.
+This section focuses less on the generic aspects of writing clean Go code and more on the specifics, with an emphasis on the underlying clean code principles.
 
 ### Return Values
 
@@ -708,7 +708,7 @@ This feels much nicer and is also much safer. Some would even say that it's easi
 
 This approach is not limited to errors and can be used for other returned values. As an example, we are also returning a `NullItem` instead of `Item{}` as we did before. There are many different scenarios in which it might be preferable to return a defined object, rather than initialising it on return.
 
-Returning default `Null` values like we did in the previous examples can also be safer in certain cases. As an example, a user of our package could forget to check for errors and end up initialising a variable that points to an empty struct containing a default value of `nil` as one or more property values. When attempting to access this `nil` value later in the code, the client software would panic. However, when we return our custom default value instead, we can ensure that all values that would otherwise default to `nil` are initialised. Thus, we'd ensure that we do not cause panics in our users' software.
+Returning default `NullItem` values like we did in the previous examples can also be safer in certain cases. As an example, a user of our package could forget to check for errors and end up initialising a variable that points to an empty struct containing a default value of `nil` as one or more property values. When attempting to access this `nil` value later in the code, the client software would panic. However, when we return our custom default value instead, we can ensure that all values that would otherwise default to `nil` are initialised. Thus, we'd ensure that we do not cause panics in our users' software.
 
 This also benefits us. Consider this: If we wanted to achieve the same safety without returning a default value, we would have to change our code everywhere we return this type of empty value. However, with our default value approach, we now only have to change our code in a single place:
 
@@ -802,7 +802,7 @@ func GetItemHandler(w http.ReponseWriter, r http.Request) {
 
 A controversial aspect of Go is the addition of `nil`. This value corresponds to the value `NULL` in C and is essentially an uninitialised pointer. We've already seen some of the problems that `nil` can cause, but to sum up: Things break when you try to access methods or properties of a `nil` value. Thus, it's recommended to avoid returning a  `nil` value when possible. This way, the users of our code are less likely to accidentally access `nil` values. 
 
-There are other scenarios in which it is common to find `nil` values that can cause some unnecessary pain. As an example, the incorrect initialisation of a `struct` can lead to the `struct` containing `nil` properties. If accessed, they will cause a panic. An example of this can be seen below:
+There are other scenarios in which it is common to find `nil` values that can cause some unnecessary pain. An example of this is incorrectly initialising a `struct` (as in the example below), which can lead to it containing `nil` properties. If accessed, those `nil`s will cause a panic.
 
 ```go
 type App struct {
@@ -829,7 +829,7 @@ This code is absolutely fine. However, the danger is that our `App` can be initi
 	app.Cache.Add("panic", "now")
 ```
 
-The `Cache` property, has never been initialised and is therefore a `nil` pointer. Thus, invoking the `Add` method like we did here will cause a panic, with the following message:
+The `Cache` property has never been initialised and is therefore a `nil` pointer. Thus, invoking the `Add` method like we did here will cause a panic, with the following message:
 
 > panic: runtime error: invalid memory address or nil pointer dereference
 
@@ -865,7 +865,7 @@ Pointers in Go are a rather extensive topic. They're a very big part of working 
 Pointers add complexity to code. If we aren't cautious, incorrectly using pointers can introduce nasty side effects or bugs that are particularly difficult to debug. By sticking to the basic principles of writing clean code that we covered in the first part of this document, we can at least reduce the chances of introducing unnecessary complexity to our code.
 
 #### Pointer Mutability
-We've already looked at the problem of mutability in the context of globally or largely scoped variables. However, mutability is not necessarily always a bad thing, and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool but we should really only ever use it when it's necessary. Let's have a look at a code example illustrating why:
+We've already looked at the problem of mutability in the context of globally or largely scoped variables. However, mutability is not necessarily always a bad thing, and I am by no means an advocate for writing 100% pure functional programs. Mutability is a powerful tool, but we should really only ever use it when it's necessary. Let's have a look at a code example illustrating why:
 
 ```go
 func (store *UserStore) Insert(user *User) error {
@@ -882,7 +882,7 @@ func (store *UserStore) userExists(id int64) bool {
 }
 ```
 
-At first glance, this doesn't seem too bad. In fact, it might even seem like a rather simple insert function for a common list structure. We accept a pointer as input, and if no other users with this `id` exist, then we insert the user pointer into our list. Then, we use this functionality in our public API for creating new users:
+At first glance, this doesn't seem too bad. In fact, it might even seem like a rather simple insert function for a common list structure. We accept a pointer as input, and if no other users with this `id` exist, then we insert the provided user pointer into our list. Then, we use this functionality in our public API for creating new users:
 
 ```go
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -910,9 +910,9 @@ Once again, at first glance, everything looks fine. We parse the user from the r
 
 However, imagine that we are using an in-memory store based on a `map`. This code will produce some unexpected results. If we check our user store, we'll see that the change we made to the users password in the HTTP handler function also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest` is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
 
-This is a great example of why both mutability and variable scope can cause some serious issues and bugs when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of our variable. Even more worrying is the fact that we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to the global level. As demonstrated by the above example, this can lead to disastrous bugs that are particularly difficult to find and eradicate.
+This is a great example of why both mutability and variable scope can cause some serious issues and bugs when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of the variable whose data is being pointed to. Even more worrying is the fact that we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to the global level. As demonstrated by the above example, this can lead to disastrous bugs that are particularly difficult to find and eradicate.
 
-Fortunately, the fix for this bug is rather simple:
+Fortunately, the fix for this is rather simple:
 
 ```go
 func (store *UserStore) Insert(user User) error {
@@ -936,11 +936,11 @@ func (store *UserStore) Get(id int64) (*User, error) {
 }
 ```
 
-Again, this is a very standard implementation of a getter function for our store. However, it's still bad code because we are once again expanding the scope of our pointer, which may end up causing unexpected side-effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bound to cause confusion. Our store should be the only entity allowed to make changes to the values stored there. The easiest fix for this is to return a value of `User` rather than returning a pointer.
+Again, this is a very standard implementation of a getter function for our store. However, it's still bad code because we are once again expanding the scope of our pointer, which may end up causing unexpected side effects. When returning the actual pointer value, which we are storing in our user store, we are essentially giving other parts of our application the ability to change our store values. This is bound to cause confusion. Our store should be the only entity allowed to make changes to its values. The easiest fix for this is to return a value of `User` rather than returning a pointer.
 
 > NOTE: Consider the case where our application uses multiple threads. In this scenario, passing pointers to the same memory location can also potentially result in a race condition. In other words, we aren't only potentially corrupting our data&mdash;we could also cause a panic from a data race.
 
-Please keep in mind that there is intrinsically nothing wrong with returning pointers. However, the expanded scope of variables (and the number of owners that point to them) is the most important consideration when working with pointers. This is what categorises our previous example as a smelly operation. This is also why common Go constructors are also absolutely fine:
+Please keep in mind that there is intrinsically nothing wrong with returning pointers. However, the expanded scope of variables (and the number of owners that point to those variables) is the most important consideration when working with pointers. This is what categorises our previous example as a smelly operation. This is also why common Go constructors are absolutely fine:
 
 ```go
 func AddName(user *User, name string) {
@@ -950,9 +950,9 @@ func AddName(user *User, name string) {
 
 This is *okay* because the variable scope, which is defined by whoever invokes the function, remains the same after the function returns. Combined with the fact that the function invoker remains the sole owner of the variable, this means that the pointer cannot be manipulated in an unexpected manner.
 
-### Closures are Function Pointers
+### Closures Are Function Pointers
 
-Before we get into the next topic of using interfaces in Go, I would like to introduce a common alternative. It's what C programmers know as "function pointers" and what most other programming languages call <strong>closures</strong>. A closure is simply an input parameter like any other, except it represents a function. In JavaScript, it's quite common to use closures as callbacks, which are just functions that are invoked after some asynchronous operation has finished. In Go, we don't really have this notion. We can, however, use closures to partially overcome a different hurdle: The lack of generics.
+Before we get into the next topic of using interfaces in Go, I would like to introduce a common alternative. It's what C programmers know as "function pointers" and what most other programming languages call <strong>closures</strong>. A closure is simply an input parameter like any other, except it represents (points to) a function that can be invoked. In JavaScript, it's quite common to use closures as callbacks, which are just functions that are invoked after some asynchronous operation has finished. In Go, we don't really have this notion. We can, however, use closures to partially overcome a different hurdle: The lack of generics.
 
 Consider the following function signature:
 
@@ -960,7 +960,7 @@ Consider the following function signature:
 func something(closure func(float64) float64) float64 { ... }
 ```
 
-This function takes another function (a closure) as input and returns a `float64`. The input function takes a `float64` as input and also returns a `float64`. This pattern can be particularly useful for creating a loosely coupled architecture, making it easier to to add functionality without affecting other parts of the code. Suppose we have a struct containing data that we want to manipulate in some form. Through this structure's `Do()` method, we can perform operations on that data. If we know the operation ahead of time, we can obviously handle that logic directly in our `Do()` method:
+Here, `something` takes another function (a closure) as input and returns a `float64`. The input function takes a `float64` as input and also returns a `float64`. This pattern can be particularly useful for creating a loosely coupled architecture, making it easier to to add functionality without affecting other parts of the code. Suppose we have a struct containing data that we want to manipulate in some form. Through this structure's `Do()` method, we can perform operations on that data. If we know the operation ahead of time, we can obviously handle that logic directly in our `Do()` method:
 
 ```go
 func (datastore *Datastore) Do(operation Operation, data []byte) error {
@@ -1027,7 +1027,7 @@ func main() {
 }
 ```
 
-Notice how we've effectively moved some of the clutter out of the `Do` method signature and into the `concat` method signature. Here, the `concat` function returns yet another function. Within the returned function, we store the input values originally passed in to our `concat` function. The returned function can therefore now take a single input parameter; within our function logic, we will append it to our original input value. As a newly introduced concept, this may seem quite strange. However, getting used to having this as an option can help loosen up logic coupling and help get rid of bloated functions.
+Notice how we've effectively moved some of the clutter out of the `Do` method signature and into the `concat` method signature. Here, the `concat` function returns yet another function. Within the returned function, we store the input values originally passed in to our `concat` function. The returned function can therefore now take a single input parameter; within our function logic, we will append it to our original input value. As a newly introduced concept, this may seem quite strange. However, it's good to get used to having this as an option; it can help loosen up logic coupling and get rid of bloated functions.
 
 In the next section, we'll get into interfaces. Before we do so, let's take a short moment to discuss the difference between interfaces and closures. First, it's worth noting that interfaces and closures definitely solve some common problems. However, the way that interfaces are implemented in Go can sometimes make it tricky to decide whether to use interfaces or closures for a particular problem. Usually, whether an interface or a closure is used isn't really of importance; the right choice is whichever one solves the problem at hand. Typically, closures will be simpler to implement if the operation is simple by nature. However, as soon as the logic contained within a closure becomes complex, one should strongly consider using an interface instead.  
 
@@ -1042,7 +1042,9 @@ Jon Bodner also has a related talk:
 
 ### Interfaces in Go
 
-In general, Go's approach to handling `interface`s is quite different from those of other languages. Interfaces aren't explicitly implemented like they would be in Java or C#; rather, they are implicitly created if they fulfill the contract of the interface. As an example, this means that any `struct` that has an `Error()` method implements (or "satisfies") the `Error` interface and can be returned as an `error`. This manner of implementing interfaces is extremely easy and makes Go feel more fast paced and dynamic. However, there are certainly disadvantages with this approach. As the interface implementation is no longer explicit, it can be difficult to see which interfaces are implemented by a struct. Therefore, it's common to define interfaces with as few methods as possible; this makes it easier to understand whether a particular struct fulfills the contract of the interface.
+In general, Go's approach to handling `interface`s is quite different from those of other languages. Interfaces aren't explicitly implemented like they would be in Java or C#; rather, they are implicitly created if they fulfill the contract of the interface. As an example, this means that any `struct` that has an `Error()` method implements (or "fulfills") the `Error` interface and can be returned as an `error`. This manner of implementing interfaces is extremely easy and makes Go feel more fast paced and dynamic.
+
+However, there are certainly disadvantages with this approach. As the interface implementation is no longer explicit, it can be difficult to see which interfaces are implemented by a struct. Therefore, it's common to define interfaces with as few methods as possible; this makes it easier to understand whether a particular struct fulfills the contract of the interface.
 
 An alternative is to create constructors that return an interface rather than the concrete type:
 
@@ -1138,7 +1140,7 @@ func (metadata *Metadata) AddUpdateInfo(user types.User) {
 
 Again, without breaking the rest of our codebase, we've managed to introduce new functionality. This kind of programming makes implementing new features very quick and painless, which is exactly what we are trying to achieve by writing clean code.
 
-Now, I am sorry to break this streak of happiness&mdash;it's time we enter the smelly forbidden forest of Go. Let's revisit the original problem of our interfaces: Trying to explicitly show which interfaces are being implemented by a given structure. Instead of embedding a struct, we can embed an interface:
+Now, I am sorry to break this streak of happiness&mdash;it's time that we enter the smelly forbidden forest of Go. Let's revisit the original problem of our interfaces: Trying to explicitly show which interfaces are being implemented by a given structure. Instead of embedding a struct, we can embed an interface:
 
 ```go
 type NullWriter struct {
@@ -1150,7 +1152,7 @@ func NewNullWriter() io.Writer {
 }
 ```
 
-The above code compiles. The first time I saw this, I couldn't believe that this was actually valid code. Technically, we are implementing the interface of `Writer`, because we are embedding the interface and "inheriting" the functions that are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
+The above code compiles. The first time I saw this, I couldn't believe that this was actually valid code. Technically, we are implementing the interface of `Writer` because we are embedding the interface and "inheriting" the functions that are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
 
 ```go
 func main() {
@@ -1174,7 +1176,7 @@ Let's quickly get back to clean code and using interfaces the proper way in Go. 
 
 > FUN FACT: This proverb actually has nothing to do with Go. It's taken from an early specification of the TCP networking protocol.
 
-In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice and becomes very beneficial when doing tests with mocking. As an example, we can create a function that takes a writer interface as its input and invokes the `Write` method of that interface:
+In other words, you should write functions that accept an interface and return a concrete type. This is generally good practice and is especially useful when doing tests with mocking. As an example, we can create a function that takes a writer interface as its input and invokes the `Write` method of that interface:
 
 ```go
 type Pipe struct {
@@ -1214,7 +1216,7 @@ func TestFn(t *testing.T) {
 
 > NOTE: There is actually already a null writer implementation built into the `ioutil` package named `Discard`.
 
-When constructing our `Pipe` struct with `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do was add four lines of code. This is why you're encouraged to make interfaces as small as possible in idiomatic Go&mdash;it makes it especially easy to implement patterns like the one we just saw. However, this implementation of interfaces, also comes with a <em>huge</em> downside.
+When constructing our `Pipe` struct with `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do was add four lines of code. This is why you're encouraged to make interfaces as small as possible in idiomatic Go&mdash;it makes it especially easy to implement patterns like the one we just saw. However, this implementation of interfaces also comes with a <em>huge</em> downside.
 
 ### The empty `interface{}`
 Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed dissatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
