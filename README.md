@@ -16,7 +16,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
 ## Table of Contents
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * [Test-Driven Development](#Test-Driven-Development)
-    * [Naming Conventions](#Naming)
+    * [Naming Conventions](#Naming-Conventions)
     * * [Comments](#Comments)
     	* [Function Naming](#Function-Naming)
     	* [Variable Naming](#Variable-Naming)
