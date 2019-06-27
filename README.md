@@ -263,7 +263,7 @@ First, indentation hell makes it difficult for other developers to understand th
 
 Indentation hell can result in reader fatigue if a developer has to constantly parse unwieldy code like the sample above. Naturally, this is something we want to avoid at all costs.
 
-So, how do we clean this function? Fortunately, it's actually quite simple. On our first iteration, we will try to ensure that we are returning an error as soon as possible. Instead of nested the `if` and `else` statements, we want to "push our code to the left," so to speak. Take a look:
+So, how do we clean this function? Fortunately, it's actually quite simple. On our first iteration, we will try to ensure that we are returning an error as soon as possible. Instead of nesting the `if` and `else` statements, we want to "push our code to the left," so to speak. Take a look:
 
 ```go
 func GetItem(extension string) (Item, error) {
