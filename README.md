@@ -33,7 +33,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
     * [Pointers in Go](#Pointers-in-Go)
     * [Closures Are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
-    * [The empty `interface{}`](#The-Empty-interface)
+    * [The Empty `interface{}`](#The-Empty-Interface)
 * [Summary](#Summary)
 
 ## Introduction to Clean Code
@@ -1219,16 +1219,16 @@ func TestFn(t *testing.T) {
 
 When constructing our `Pipe` struct with `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do was add four lines of code. This is why you're encouraged to make interfaces as small as possible in idiomatic Go&mdash;it makes it especially easy to implement patterns like the one we just saw. However, this implementation of interfaces also comes with a <em>huge</em> downside.
 
-### The empty `interface{}`
-Unlike other languages, go does not have an implementation for generics. There have been many implementation proposals, but all have been deemed dissatisfactory by the Go language team. Unfortunately, without generics, developers are trying to find creative ways around this issue, very often using the empty `interface{}`. The next section, will describe why these, often too creative, implementations should be considered bad practice and unclean code. There will also be good examples of usage of the empty `interface{}` and how to avoid some pitfalls of writing code with the empty `interface{}`. 
+### The Empty `interface{}`
+Unlike other languages, Go does not have an implementation for generics. There have been many proposals for one, but all have been turned down by the Go language team. Unfortunately, without generics, developers must try to find creative alternatives, which very often involves using the empty `interface{}`. This section describes why these often <em>too</em> creative implementations should be considered bad practice and unclean code. There will also be examples of appropriate usage of the empty `interface{}` and how to avoid some pitfalls of writing code with it.
 
-But first and foremost. What drives developers to use the empty `interface{}`? Well, as I said in the previously, the way that Go determines whether a concrete type implements an interface, is by checking whether it implements the methods of a specific interface. So what happens, if our interface implement no methods at all?
+As mentioned in a previous section, Go determines whether a concrete type implements a particular interface by checking whether the type implements the <em>methods</em> of that interface. So what happens if our interface declares no methods, as is the case with the empty interface?
 
 ```go
 type EmptyInterface interface {}
 ```
 
-The above being equivalent to the built-in type `interface{}`. The result of this interface type is that **any** type is accepted. Meaning, that we can write functions in which any type is accepted. This is super useful for certain kind of functions, such as when creating a printer function. This is how it's possible to give any type to the `Println` function from the `fmt` package:
+The above is equivalent to the built-in type `interface{}`. A natural consequence of this is that we can write generic functions that accept any type as arguments. This is extremely useful for certain kinds of functions, such as print helpers. Interestingly, this is actually what makes it possible to pass in any type to the `Println` function from the `fmt` package:
 
 ```go
 func Println(v ...interface{}) {
@@ -1236,29 +1236,31 @@ func Println(v ...interface{}) {
 }
 ```
 
-In this case, we aren't only accepting a single `interface{}` but rather, a slice of types. These types can be of any type and can even be of different types, as long as they implement the empty `interface{}`, which we are certain that any type will. This is a super common pattern when handling string conversation (both from and to string). The reason being, this is the only way in Go to implement generic methods. Good examples of this, come from the `json` standard library package:
+In this case, `Println` isn't just accepting a single `interface{}`; rather, the function accepts a <em>slice</em> of types that implement the empty `interface{}`. As there are no methods associated with the empty `interface{}`, <em>all</em> types are accepted, even making it possible to feed `Println` with a slice of different types. This is a very common pattern when handling string conversation (both from and to a string). Good examples of this come from the `json` standard library package:
 
 ```go
 func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
-	var item Item
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+    var item Item
+    if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
-	if err := db.InsertItem(item); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatsOK)
+    if err := db.InsertItem(item); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatsOK)
 }
 ```
 
-All the *less elegant* code, is contained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
+All the less elegant code is contained within the `Decode` function. Thus, developers using this functionality won't have to worry about type reflection or type casting; we just have to worry about providing a pointer to a concrete type. This is good because the `Decode()` function is technically returning a concrete type. We are passing in our `Item` value, which will be populated from the body of the HTTP request. This means we won't have to deal with the potential risks of handling the `interface{}` value ourselves.
 
-However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid json, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+However, even when using the empty `interface{}` with good programming practices, we still have some issues. If we pass in a JSON string that has nothing to do with our `Item` type but is still valid JSON, we won't receive an error&mdash;our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. Unfortunately, as of writing this document, there is no simple or good way to implement these types of generic decoders without using the empty `interface{}` type.
 
-The problem with this, is that we are leaning towards using Go (a statically typed language) as a dynamically typed language. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
+The problem with using `interface{}` in this manner is that we are leaning towards using Go, a statically typed language, as a dynamically typed language. This becomes even clearer when looking at poor implementations of the `interface{}` type. The most common example of this comes from developers trying to implement a generic store or list of some sort.
+
+Let's look at an example of trying to implement a generic HashMap package that can store any type using `interface{}`. 
 
 ```go
 type HashMap struct {
@@ -1278,9 +1280,9 @@ func (hashmap *HashMap) Get(id string) (interface{}, error) {
 }
 ```
 
-> NOTE: I have omitted thread-safety from the example for simplicity
+> NOTE: I have omitted thread safety from this example to keep it simple.
 
-Please keep in mind that the implementation pattern used above, is used in quite a lot of Go packages. It is even used in the standard library `sync` package, for the `sync.Map` type. So, what is the big problem with this implementation? Well, let's have a look at an example of using this package.
+Please keep in mind that the implementation pattern shown above is actually used in quite a lot of Go packages. It is even used in the standard library `sync` package for the `sync.Map` type. So what's the problem with this implementation? Well, let's have a look at an example of using the package:
 
 ```go
 func SomeFunction(id string) (Item, error) {
@@ -1296,11 +1298,11 @@ func SomeFunction(id string) (Item, error) {
 }
 ```
 
-On first glance, this looks fine. However, like mentioned previously. However, we will start getting into trouble, should we add different types in our store, which as of now, is not prevented. There is nothing limiting us from adding something other than the `Item` type. So what happens when someone starts adding other types into our HashMap? Our function now might return an error. This might even be a small change like someone else in the code base wanting to store a pointer `*Item` instead of an `Item`. Worst of all, this might not even be caught by our tests. Depending on the complexity of the system, this might introduce some bugs particularly difficult to debug. 
+At first glance, this looks fine. However, we'll start getting into trouble if we add <em>different</em> types to our store, something that's currently allowed. There is nothing preventing us from adding something other than the `Item` type. So what happens when someone starts adding other types into our HashMap, like a pointer `*Item` instead of an `Item`? Our function now might return an error. Worst of all, this might not even be caught by our tests. Depending on the complexity of the system, this could introduce some bugs that are particularly difficult to debug.
 
-This type of code, should never reach production. The matter of the fact is, that Go does not support generics as of now and as Go programmers, we should accept this. If we want to use generics, then we should use a different language which does support generics, rather than trying hack our way out of this. 
+This type of code should never reach production. Remember: Go does not (yet) support generics. That's just a fact that developers must accept for the time being. If we want to use generics, then we should use a different language that does support generics rather than relying on dangerous hacks.
 
-So, how do we prevent this code from reaching production? The simples solution for our problem, is basically to just write the functions with concrete types, instead of using `interface{}` values. Of course, this is not always the best approach, as there might be some functionality within the package which is not trivial to implement ourselves. Therefore, it might be a better approach to create wrappers, which expose the functionality we need, but still ensure type safety:
+So, how do we prevent this code from reaching production? The simplest solution is to just write the functions with concrete types instead of using `interface{}` values. Of course, this is not always the best approach, as there might be some functionality within the package that is not trivial to implement ourselves. Therefore, a better approach may be to create wrappers that expose the functionality we need but still ensure type safety:
 
 ```go
 type ItemCache struct {
@@ -1328,24 +1330,28 @@ func (cache *ItemCache) Put(id string, item Item) error {
 }
 ```
 
-> NOTE: Implementations of other functionalities of the tinykv.KV cache has been left out for the purpose of brevity.
+> NOTE: Implementations of other functionalities of the `tinykv.KV` cache have been omitted for the sake of brevity.
 
-Creating the wrapper above, will now ensure that we are using the actual types and that we are no longer passing in `interface{}` types. It is therefore no longer possible to accidentally populate our store with a wrong value type and we have contained our casting of types, as much as possible. This is a very straight forward way of solving our issue, though somewhat manual.
+The wrapper above now ensures that we are using the actual types and that we are no longer passing in `interface{}` types. It is therefore no longer possible to accidentally populate our store with a wrong value type, and we have restricted our casting of types as much as possible. This is a very straightforward way of solving our issue, even if somewhat manually.
 
 ## Summary
 
-First of all, thank you for making it all the way through the article. I hope that it has given some insight into what clean code is, as well as how it will help ensure maintainability, readability and stability in your code base. To sum up all the topics covered:
+First of all, thank you for making it all the way through this article! I hope it has provided some insight into clean code and how it helps ensure maintainability, readability, and stability in any codebase.
 
-**Functions** - Naming of functions should become more specific, the smaller the scope of the function. Ensure that all functions are single purpose. A good measure, being to limit your function length to 5-8 lines and only takes 2-3 input arguments.
+Let's briefly sum up all the topics we've covered:
 
-**Variables** - Naming of variables should become less specific the smaller the scope, and keep the scope of your variables to a minimum. Also, keep the mutability of your variables to a minimum and be more and more aware of this as their scope grows.
+- <strong>Functions</strong>&mdash;A function's name should reflect its scope; the smaller the scope of a function, the more specific its name. Ensure that all functions serve a single purpose in as few lines as possible. A good rule of thumb is to limit your functions to 5&ndash;8 lines and to only accept 2&ndash;3 arguments.
 
-**Return Values** - Concrete types should be returned whenever they can. Make it as hard as possible for users of your package to create mistakes and as easy for them to understand the values returned by your functions
+- <strong>Variables</strong>&mdash;Unlike functions, variables should assume more generic names as their scope becomes smaller. It's also recommended that you limit the scope of a variable as much as possible to prevent unintentional modification. On a similar note, you should keep the modification of variables to a minimum; this becomes an especially important consideration as the scope of a variable grows.
 
-**Pointers** - Use pointers with caution and limit scope and mutability to an absolute minimum. Garbage collection only assists with memory management, it does not assist with all the other complexities associated with pointers.
+- <strong>Return Values</strong>&mdash;Concrete types should be returned whenever possible. Make it as difficult as possible for users of your package to make mistakes and as easy as possible for them to understand the values returned by your functions.
 
-**Interfaces** - Use interfaces as much as possible to loosen the coupling of your code. Contain any code using the empty `interface{}` as much as possible and prevent it being exposed. 
+- <strong>Pointers</strong>&mdash;Use pointers with caution, and limit their scope and mutability to an absolute minimum. Remember: Garbage collection only assists with memory management; it does not assist with all of the other complexities associated with pointers.
 
-Of course, what is considered clean code is particularly subjective and I don't think that will ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard, rather than a standard that everyone agrees with 100%. It's also important to understand that fanaticism is never the goal. A codebase will most likely never be 100% 'clean', in the same way as your office desk isn't either. There is room for stepping outside the rules and boundaries established in this article. However, remember that the most important aspect of writing clean code, is helping one another. We help our support engineers, by ensuring stability in software and easy debugging. We help our fellow developers by ensuring our code is readable and easily digestible. We help everyone involved in the project by establishing a flexible code base, in which we can quickly introduce new features without breaking our current platform. We move quickly by going slowly and thenceforth, everyone is satisfied. 
+- <strong>Interfaces</strong>&mdash;Use interfaces as much as possible to loosen the coupling of your code. Hide any code using the empty `interface{}` as much as possible from end users to prevent it from being exposed.
 
-I therefore hope, that you will join the discussion to help what we, the Go community, define as clean code. Let's establish a common ground, so that we improve software. Not only for ourselves, but the sake of everyone.
+As a final note, it's worth mentioning that the notion of clean code is particularly subjective, and that likely won't ever change. However, much like my statement concerning `gofmt`, I think it's more important to find a common standard than something that everyone agrees with; the latter is extremely difficult to achieve.
+
+It's also important to understand that fanaticism is never the goal with clean code. A codebase will most likely never be fully 'clean,' in the same way that your office desk probably isn't either. There's certainly room for you to step outside the rules and boundaries covered in this article. However, remember that the most important reason for writing clean code is to help yourself and other developers. We support engineers by ensuring stability in the software we produce and by making it easier to debug faulty code. We help our fellow developers by ensuring that our code is readable and easily digestible. We help <em>everyone</em> involved in the project by establishing a flexible codebase that allows us to quickly introduce new features without breaking our current platform. We move quickly by going slowly, and everyone is satisfied.
+
+I hope you will join this discussion to help the Go community define (and refine) the concept of clean code. Let's establish a common ground so that we can improve software&mdash;not only for ourselves but for the sake of everyone.
