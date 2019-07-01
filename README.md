@@ -488,7 +488,7 @@ func main() {
 
 After our refactor, `val` is no longer modified, and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger, more complex systems, it can be impossible to figure out why errors are occurring. We don't want this to happen&mdash;not only because we generally dislike software errors but also because it's disrespectful to our colleagues, and ourselves; we are potentially wasting each others' time having to debug this type of code. Developers need to take responsibility for their own code rather than blaming these issues on the variable declaration syntax of a particular language like Go.
 
-On a side not, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
+On a side note, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
 
 ```go
 func getVal(num int) (string, error) {
@@ -534,17 +534,17 @@ This suffers from the same symptom as described in our discussion of variable sc
 
 ```go
 func main() {
-  var sender chan Item
-  sender = make(chan Item)
-  
-  go func() {
-   	for {
-    	select {
-      case item := <- sender:
-        // do something
-      }
-  	} 
-  }()
+	var sender chan Item
+	sender = make(chan Item)
+
+	go func() {
+		for {
+			select {
+			case item := <-sender:
+				// do something
+			}
+		}
+	}()
 }
 ```
 
@@ -626,7 +626,7 @@ This section will describe some less generic aspects of writing clean Go code, b
 ### Return Values
 
 #### Returning Defined Errors
-We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readability, testability and maintainability of the code base. This error returning method will improve all three aspects, with very little effort.
+We will be started out nice and easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readability, testability and maintainability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
 
