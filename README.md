@@ -16,7 +16,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
 ## Table of Contents
 * [Introduction to Clean Code](#Introduction-to-Clean-Code)
     * [Test-Driven Development](#Test-Driven-Development)
-    * [Naming Conventions](#Naming)
+    * [Naming Conventions](#Naming-Conventions)
     * * [Comments](#Comments)
     	* [Function Naming](#Function-Naming)
     	* [Variable Naming](#Variable-Naming)
@@ -102,7 +102,7 @@ Of course, this was a relatively trivial example. Writing clear and expressive c
 
 #### Function Naming
 
-Let's now move on to function naming conventions. The general rule here is really simple: The more specific the function, the more general its name. In other words,  we want to start with a very broad and short function name, such as `Run` or `Parse`, that describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+Let's now move on to function naming conventions. The general rule here is really simple: the more specific the function, the more general its name. In other words, we want to start with a very broad and short function name, such as `Run` or `Parse`, that describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
 func main() {
@@ -145,7 +145,7 @@ func fileExtension(filepath string) string {
 }
 ```
 
-This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdash;makes the code easier to follow and and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
+This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdash;makes the code easier to follow and read. Consider the alternative: if our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
 
 #### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variables should be named from more to less specific the deeper we go into nested scopes.
@@ -226,7 +226,7 @@ func GetItem(ctx context.Context, json []bytes) (Item, error) {
         return NullItem, err
     }
     if !GetUserFromContext(ctx).IsAdmin() {
-	      return NullItem, ErrInsufficientPrivliges
+	      return NullItem, ErrInsufficientPrivileges
     }
     return db.GetItem(order.ItemID)
 }
@@ -488,7 +488,7 @@ func main() {
 
 After our refactor, `val` is no longer modified, and the scope has been reduced. Again, keep in mind that these functions are very simple. Once this kind of code style becomes a part of larger, more complex systems, it can be impossible to figure out why errors are occurring. We don't want this to happen&mdash;not only because we generally dislike software errors but also because it's disrespectful to our colleagues, and ourselves; we are potentially wasting each others' time having to debug this type of code. Developers need to take responsibility for their own code rather than blaming these issues on the variable declaration syntax of a particular language like Go.
 
-On a side not, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
+On a side note, if the `// do something else` part is another attempt to mutate the `val` variable, we should extract that logic out as its own self-contained function, as well as the previous part of it. This way, instead of expanding the mutable scope of our variables, we can just return a new value:
 
 ```go
 func getVal(num int) (string, error) {
@@ -534,17 +534,17 @@ This suffers from the same symptom as described in our discussion of variable sc
 
 ```go
 func main() {
-  var sender chan Item
-  sender = make(chan Item)
-  
-  go func() {
-   	for {
-    	select {
-      case item := <- sender:
-        // do something
-      }
-  	} 
-  }()
+	var sender chan Item
+	sender = make(chan Item)
+
+	go func() {
+		for {
+			select {
+			case item := <-sender:
+				// do something
+			}
+		}
+	}()
 }
 ```
 
@@ -626,7 +626,7 @@ This section will describe some less generic aspects of writing clean Go code, b
 ### Return Values
 
 #### Returning Defined Errors
-We will be started out nice an easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readability, testability and maintainability of the code base. This error returning method will improve all three aspects, with very little effort.
+We will be started out nice and easy, by describing a cleaner way to return errors. Like discussed earlier, our main goals with writing clean code, is to ensure readability, testability and maintainability of the code base. This error returning method will improve all three aspects, with very little effort.
 
 Let's consider the normal way to return a custom error. This is a hypothetical example taken from a thread-safe map implementation, we have named `Store`:
 
@@ -1250,7 +1250,7 @@ func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
 
 All the *less elegant* code, is contained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
 
-However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid son, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid json, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
 
 The problem with this, is that we are leaning towards using Go (a statically typed language) as a dynamically typed language. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
 
