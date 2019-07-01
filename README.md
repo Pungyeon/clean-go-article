@@ -1222,7 +1222,7 @@ As mentioned in a previous section, Go determines whether a concrete type implem
 type EmptyInterface interface {}
 ```
 
-The above is equivalent to the built-in type `interface{}`. A natural consequence of this is that we can write generic functions&mdash;ones that accept any type as arguments. This is extremely useful for certain kinds of functions, such as print helpers. Interestingly, this is actually what makes it possible to pass in any type to the `Println` function from the `fmt` package:
+The above is equivalent to the built-in type `interface{}`. A natural consequence of this is that we can write generic functions that accept any type as arguments. This is extremely useful for certain kinds of functions, such as print helpers. Interestingly, this is actually what makes it possible to pass in any type to the `Println` function from the `fmt` package:
 
 ```go
 func Println(v ...interface{}) {
