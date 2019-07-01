@@ -102,7 +102,7 @@ Of course, this was a relatively trivial example. Writing clear and expressive c
 
 #### Function Naming
 
-Let's now move on to function naming conventions. The general rule here is really simple: The more specific the function, the more general its name. In other words,  we want to start with a very broad and short function name, such as `Run` or `Parse`, that describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
+Let's now move on to function naming conventions. The general rule here is really simple: the more specific the function, the more general its name. In other words, we want to start with a very broad and short function name, such as `Run` or `Parse`, that describes the general functionality. Let's imagine that we are creating a configuration parser. Following this naming convention, our top level of abstraction might look something like the following:
 
 ```go
 func main() {
@@ -145,7 +145,7 @@ func fileExtension(filepath string) string {
 }
 ```
 
-This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdashmakes the code easier to follow and and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
+This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdash;makes the code easier to follow and read. Consider the alternative: if our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
 
 #### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variables should be named from more to less specific the deeper we go into nested scopes.
@@ -1250,7 +1250,7 @@ func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
 
 All the *less elegant* code, is contained within the  `Decode` function. Developers using this functionality, therefore, won't have to worry about reflection or casting of types. We just have to worry about providing a pointer to a concrete type. This is good, because the `Decode()` function is, technically, returning a concrete type. We are passing in our `Item` value, which will be populated from body of the http request and we won't have to deal with the potential risks of handling the `interface{}` value.
 
-However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid son, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
+However, even when using the empty `interface{}` with good practices, we still have some issues. If we pass a JSON string that has nothing to do with our `Item` type, but is still valid json, we still won't receive an error. Our `item` variable will just be left with the default values. So, while we don't have to worry about reflection and casting errors, we will still have to make sure that the message sent from our client is a valid `Item` type. However, as of writing this document, there is no simple / good way to implement these type of generic decoders, without using the empty `interface{}` type. 
 
 The problem with this, is that we are leaning towards using Go (a statically typed language) as a dynamically typed language. This becomes even clearer, when looking at poor implementations of the `interface{}` type. The most common example of this, comes from developers trying to implement a generic store / list of some sort. Let's look at an example, trying to implement a generic HashMap package, which can store any type, using the `interface{}`. 
 
