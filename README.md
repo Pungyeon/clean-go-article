@@ -1236,7 +1236,7 @@ func Println(v ...interface{}) {
 }
 ```
 
-In this case, `Println` isn't just accepting a single `interface{}`; rather, the function accepts a <em>slice</em> of types. These can be <em>any</em> types, not necessarily all the same. The only requirement is that all of the types implement the empty `interface{}`, which we are certain that any type will. This is a very common pattern when handling string conversation (both from and to a string). Good examples of this come from the `json` standard library package:
+In this case, `Println` isn't just accepting a single `interface{}`; rather, the function accepts a <em>slice</em> of types that implement the empty `interface{}`. As there are no methods associated with the empty `interface{}`, <em>all</em> types are accepted, even making it possible to feed `Println` with a slice of different types. This is a very common pattern when handling string conversation (both from and to a string). Good examples of this come from the `json` standard library package:
 
 ```go
 func InsertItemHandler(w http.ResponseWriter, r *http.Request) {
