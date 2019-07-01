@@ -226,7 +226,7 @@ func GetItem(ctx context.Context, json []bytes) (Item, error) {
         return NullItem, err
     }
     if !GetUserFromContext(ctx).IsAdmin() {
-	      return NullItem, ErrInsufficientPrivliges
+	      return NullItem, ErrInsufficientPrivileges
     }
     return db.GetItem(order.ItemID)
 }
