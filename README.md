@@ -754,7 +754,7 @@ func NewErrorDetails(err error, details ...interface{}) ErrorDetails {
 }
 
 func (err *errDetails) Error() string {
-    return fmt.Sprintf("%v: %v", err.details)
+    return fmt.Sprintf("%v: %v", err.errtype, err.details)
 }
 
 func (err *errDetails) Type() error {
