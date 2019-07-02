@@ -145,7 +145,7 @@ func fileExtension(filepath string) string {
 }
 ```
 
-This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdash;makes the code easier to follow and and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
+This kind of logical progression in our function names&mdash;from a high level of abstraction to a lower, more specific one&mdash;makes the code easier to follow and read. Consider the alternative: If our highest level of abstraction is too specific, then we'll end up with a name that attempts to cover all bases, like `DetermineFileExtensionAndParseConfigurationFile`. This is horrendously difficult to read; we are trying to be too specific too soon and end up confusing the reader, despite trying to be clear! 
 
 #### Variable Naming
 Rather interestingly, the opposite is true for variables. Unlike functions, our variables should be named from more to less specific the deeper we go into nested scopes.
