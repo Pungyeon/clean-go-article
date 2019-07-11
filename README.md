@@ -1087,7 +1087,7 @@ var _ io.Writer = &NullWriter{}
 var _ io.Reader = &NullWriter{}
 ```
 
-From the above code, it's very easy to understand which interfaces must be fulfilled and will ensure that the compiler is helping us out on compile time. Therefore, this is generally the preferred solution for checking interface contract fulfillment.
+From the above code, it's very easy to understand which interfaces must be fulfilled; this ensures that the compiler will help us out during compile time. Therefore, this is generally the preferred solution for checking interface contract fulfillment.
 
 There's yet another method of trying to be more explicit about which interfaces a given struct implements. However, this third method actually achieves the opposite of what we want. It involves using embedded interfaces as a struct property.
 
