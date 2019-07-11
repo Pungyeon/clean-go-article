@@ -1162,8 +1162,6 @@ func (metadata *Metadata) AddUpdateInfo(user types.User) {
 
 Again, without breaking the rest of our codebase, we've managed to introduce new functionality. This kind of programming makes implementing new features very quick and painless, which is exactly what we are trying to achieve by writing clean code.
 
-// TODO : Rewrite this section to be more sober
-
 Now, I am sorry to break this streak of happiness&mdash;it's time that we enter the smelly forbidden forest of Go. Let's revisit the original problem of our interfaces: Trying to explicitly show which interfaces are being implemented by a given structure. Instead of embedding a struct, we can embed an interface:
 
 ```go
