@@ -1068,6 +1068,27 @@ func NewNullWriter() io.Writer {
 
 The above function ensures that the `NullWriter` struct implements the `Writer` interface. If we were to delete the `Write` method from `NullWriter`, we would get a compilation error. This is a good way of ensuring that our code behaves as expected and that we can rely on the compiler as a safety net in case we try to write invalid code.
 
+In certain cases, it might not be desirable to write a constructor, or perhaps we would like for our constructor to return the concrete type, rather than the interface. As an example, the `NullWriter` struct has no properties to populate on initialisation, so writing a constructor is a little redundant. Therefore, we can use the less verbose method of checking interface compatibility:
+
+```go
+type Writer interface {
+	Write(p []byte) (n int, err error)
+}
+
+type NullWriter struct {}
+var _ io.Writer = &NullWriter{}
+```
+
+In the above code, we are initialising a variable with the Go `blank identifier`, with the type assignment of `io.Writer`. This results in our variable being checked to fulfill the `io.Writer` interface contract, before being discarded. This method of checking interface fulfillment also makes it possible to check that several interface contracts are fulfilled:
+
+```go
+type NullReaderWriter struct{}
+var _ io.Writer = &NullWriter{}
+var _ io.Reader = &NullWriter{}
+```
+
+From the above code, it's very easy to understand which interfaces must be fulfilled; this ensures that the compiler will help us out during compile time. Therefore, this is generally the preferred solution for checking interface contract fulfillment.
+
 There's yet another method of trying to be more explicit about which interfaces a given struct implements. However, this third method actually achieves the opposite of what we want. It involves using embedded interfaces as a struct property.
 
 > <em>Wait what? &ndash; Presumably most people</em>
@@ -1217,7 +1238,7 @@ func TestFn(t *testing.T) {
 
 > NOTE: There is actually already a null writer implementation built into the `ioutil` package named `Discard`.
 
-When constructing our `Pipe` struct with `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do was add four lines of code. This is why you're encouraged to make interfaces as small as possible in idiomatic Go&mdash;it makes it especially easy to implement patterns like the one we just saw. However, this implementation of interfaces also comes with a <em>huge</em> downside.
+When constructing our `Pipe` struct with `NullWriter` (rather than a different writer), when invoking our `Save` function, nothing will happen. The only thing we had to do was add four lines of code. This is why it is encouraged to make interfaces as small as possible in idiomatic Go&mdash;it makes it especially easy to implement patterns like the one we just saw. However, this implementation of interfaces also comes with a <em>huge</em> downside.
 
 ### The Empty `interface{}`
 Unlike other languages, Go does not have an implementation for generics. There have been many proposals for one, but all have been turned down by the Go language team. Unfortunately, without generics, developers must try to find creative alternatives, which very often involves using the empty `interface{}`. This section describes why these often <em>too</em> creative implementations should be considered bad practice and unclean code. There will also be examples of appropriate usage of the empty `interface{}` and how to avoid some pitfalls of writing code with it.
