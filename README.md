@@ -56,11 +56,11 @@ Testing and refactoring are intertwined in this process. As you refactor your co
 ###  Naming Conventions
 
 #### Comments
-First things first: I want to address the topic of comments. Unnecessary comments are the biggest indicator of code smell. Comments are usually added to a codebase because something is so unclear that it's necessary to explain it so that the reader can understand what's going on. But this isn't always the case, and comments tend to be misused.
+I'd like to first address the topic of commenting code, which is an essential practice but tends to be misapplied. Unnecessary comments can indicate problems with the underlying code, such as the use of poor naming conventions. However, whether or not a particular comment is "necessary" is somewhat subjective and depends on how legibly the code was written. For example, the logic of well-written code may still be so complex that it requires a comment to clarify what is going on. In that case, one might argue that the comment is <em>helpful</em> and therefore necessary.
 
 In Go, according to `gofmt`, <em>all</em> public variables and functions should be annotated. I think this is absolutely fine, as it gives us consistent rules for documenting our code. However, I always want to distinguish between comments that enable auto-generated documentation and <em>all other</em> comments. Annotation comments, for documentation, should be written like documentation&mdash;they should be at a high level of abstraction and concern the logical implementation of the code as little as possible.
 
-I say this because there are other ways to explain code and ensure that it's being written comprehensibly and expressively. If the code is neither of those, some people find it acceptable to introduce a comment explaining the convoluted logic. Most people simply won't read comments, as they tend to be very intrusive to the experience of reviewing code.
+I say this because there are other ways to explain code and ensure that it's being written comprehensibly and expressively. If the code is neither of those, some people find it acceptable to introduce a comment explaining the convoluted logic. Unfortunately, that doesn't really help. For one, most people simply won't read comments, as they tend to be very intrusive to the experience of reviewing code. Additionally, as you can imagine, a developer won't be too happy if they're forced to review unclear code that's been slathered with comments. The less that people have to read to understand what your code is doing, the better off they'll be.
 
 Let's take a step back and look at some concrete examples. Here's how you <em>shouldn't</em> comment your code:
 
@@ -326,7 +326,7 @@ func getItemFromCache(reference string) (Item, bool) {
 }
 ```
 
-As mentioned previously, indentation hell can make it difficult to test our code. On the other hand, when we split up our functions like we did above, it becomes much easier to get 100% code coverage because we're dealing with functions that are maybe only 4 lines each (when written by a sane person), as opposed to 400. That's just common sense.
+As mentioned previously, indentation hell can make it difficult to test our code. When we split up our `GetItem` function into several helpers, we make it easier to track down bugs when testing our code. Unlike the original version, which consisted of several `if` statements in the same scope, the refactored version of `GetItem` has just two branching paths that we must consider. The helper functions are also short and digestible, making them easier to read.
 
 > Note: For production code, one should elaborate on the code even further by returning errors instead of `bool` values. This makes it much easier to understand where the error is originating from. However, as these are just example functions, returning `bool` values will suffice for now. Examples of returning errors more explicitly will be explained in more detail later.
 
