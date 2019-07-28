@@ -1162,7 +1162,7 @@ func (metadata *Metadata) AddUpdateInfo(user types.User) {
 
 Again, without breaking the rest of our codebase, we've managed to introduce new functionality. This kind of programming makes implementing new features very quick and painless, which is exactly what we are trying to achieve by writing clean code.
 
-Let's return to the topic of interface contract fulfillment using embedded interfaces, the code below shows an example, which compiles without any issues:
+Let's return to the topic of interface contract fulfillment using embedded interfaces. Consider the following code as an example:
 
 ```go
 type NullWriter struct {
