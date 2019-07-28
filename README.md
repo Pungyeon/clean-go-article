@@ -1174,7 +1174,7 @@ func NewNullWriter() io.Writer {
 }
 ```
 
-The above code compiles. Technically, we are implementing the interface of `Writer` on our `NullWriter`, as `NullWriter` will inherit all the functions which are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface, however, when using this technique we must be extra precautious. 
+The above code compiles. Technically, we are implementing the interface of `Writer` in our `NullWriter`, as `NullWriter` will inherit all the functions that are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we must be careful when using this technique.
 
 ```go
 func main() {
