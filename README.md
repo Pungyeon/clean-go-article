@@ -1188,7 +1188,7 @@ As mentioned before, the above code will compile. The `NewNullWriter` returns a 
 
 > panic: runtime error: invalid memory address or nil pointer dereference
 
-What happened? An interface method in Go is essentially a function pointer. In this case, since we are pointing to the function of an interface, rather than an actual method implementation, we are trying to invoke a function that's actually a `nil` pointer. To avoid this from happening, we would have to provide the `NulllWriter` with a struct which fulfills the interface contract, with actual implemented methods.  
+What happened? An interface method in Go is essentially a function pointer. In this case, since we are pointing to the function of an interface, rather than an actual method implementation, we are trying to invoke a function that's actually a `nil` pointer. To prevent this from happening, we would have to provide the `NulllWriter` with a struct that fulfills the interface contract, with actual implemented methods.
 
 ```go
 func main() {
