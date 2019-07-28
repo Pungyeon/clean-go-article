@@ -1222,7 +1222,7 @@ func main() {
 }
 ```
 
-Even though, this might look like overriding methods, which are common in languages such as C# and Java. It isn't. Go doesn't have inheritance nor super classes. We can imitate the behaviour, but it is not an in-built part of the language. By using methods such as interface embedding without caution, we are creating confusing and possibly buggy code, just to save a few more lines of code. 
+Even though this might look like we're overriding methods, which is common in languages such as C# and Java, we actually aren't. Go doesn't support inheritance (and thus has no notion of a superclass). We can imitate the behaviour, but it is not a built-in part of the language. By using methods such as interface embedding without caution, we can create confusing and potentially buggy code, just to save a few more lines.
 
 > NOTE: Some argue that using embedded interfaces is a good way of creating a mock structure for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of the interface; rather, you can choose to implement only the few methods that you'd like to test. Within the context of testing/mocking, I can see this argument, but I am still not a fan of this approach.
 
