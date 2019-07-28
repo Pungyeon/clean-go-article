@@ -1202,7 +1202,7 @@ func main() {
 
 > NOTE: In the above example, `Writer` is referring to the embedded `io.Writer` interface. It is also possible to invoke the `Write` method by accessing this property with `w.Writer.Write()`.
 
-We are no longer receiving a panic and can now use the `NullWriter` as a `Writer`. This initialisation process is not much different from having properties which are initialised as `nil`, as discussed previously. Therefore, logically, we should try and handle them in a similar way. However, this is where embedded interfaces become a little difficult to work with. In a previous chapter, it was explained that the best way to handle potential `nil` values, was to make the property in question private and create a public *getter* method. This way, we could ensure that our property is, in fact, not `nil`. Unfortunately, this is simply not possible with embedded interfaces, as they are by nature, always public. 
+We are no longer triggering a panic and can now use the `NullWriter` as a `Writer`. This initialisation process is not much different from having properties that are initialised as `nil`, as discussed previously. Therefore, logically, we should try to handle them in a similar way. However, this is where embedded interfaces become a little difficult to work with. In a previous section, it was explained that the best way to handle potential `nil` values is to make the property in question private and create a public *getter* method. This way, we could ensure that our property is, in fact, not `nil`. Unfortunately, this is simply not possible with embedded interfaces, as they are by nature always public.
 
 Another concern raised by using embedded interfaces, is the potential confusion caused by partially overwritten interface methods: 
 
