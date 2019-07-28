@@ -1217,7 +1217,7 @@ func main() {
   closer := MyReadCloser{}
   
   closer.Read([]byte{1, 2, 3}) 	// works fine
-  closer.Close() 								// causes panic
+  closer.Close() 		// causes panic
   closer.ReadCloser.Closer() 		// no panic 
 }
 ```
