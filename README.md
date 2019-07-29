@@ -1162,7 +1162,7 @@ func (metadata *Metadata) AddUpdateInfo(user types.User) {
 
 Again, without breaking the rest of our codebase, we've managed to introduce new functionality. This kind of programming makes implementing new features very quick and painless, which is exactly what we are trying to achieve by writing clean code.
 
-Now, I am sorry to break this streak of happiness&mdash;it's time that we enter the smelly forbidden forest of Go. Let's revisit the original problem of our interfaces: Trying to explicitly show which interfaces are being implemented by a given structure. Instead of embedding a struct, we can embed an interface:
+Let's return to the topic of interface contract fulfillment using embedded interfaces. Consider the following code as an example:
 
 ```go
 type NullWriter struct {
@@ -1174,7 +1174,7 @@ func NewNullWriter() io.Writer {
 }
 ```
 
-The above code compiles. The first time I saw this, I couldn't believe that this was actually valid code. Technically, we are implementing the interface of `Writer` because we are embedding the interface and "inheriting" the functions that are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we have to be careful using this technique, as we can no longer rely on the compiler to save us:
+The above code compiles. Technically, we are implementing the interface of `Writer` in our `NullWriter`, as `NullWriter` will inherit all the functions that are associated with this interface. Some see this as a clear way of showing that our `NullWriter` is implementing the `Writer` interface. However, we must be careful when using this technique.
 
 ```go
 func main() {
@@ -1188,11 +1188,45 @@ As mentioned before, the above code will compile. The `NewNullWriter` returns a 
 
 > panic: runtime error: invalid memory address or nil pointer dereference
 
-What happened? An interface method in Go is essentially a function pointer. In this case, since we are pointing to the function of an interface, rather than an actual method implementation, we are trying to invoke a function that's actually a `nil` pointer. Personally, I think that this is a massive oversight in the Go compiler. This code **should not** compile... but while this is being fixed (assuming it ever will be), let's just promise each other to never write code in this way. In an attempt to be more clear with our implementation, we have ended up shooting ourselves in the foot and bypassing compiler checks.
+What happened? An interface method in Go is essentially a function pointer. In this case, since we are pointing to the function of an interface, rather than an actual method implementation, we are trying to invoke a function that's actually a `nil` pointer. To prevent this from happening, we would have to provide the `NulllWriter` with a struct that fulfills the interface contract, with actual implemented methods.
 
-> NOTE: Some people argue that using embedded interfaces is a good way of creating a mock structure for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of the interface; rather, you can choose to implement only the few methods that you'd like to test. Within the context of testing/mocking, I can see this argument, but I am still not a fan of this approach.
+```go
+func main() {
+  w := NullWriter{
+    Writer: &bytes.Buffer{},
+  }
 
-Let's quickly get back to clean code and using interfaces the proper way in Go. It's time to discuss using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is the following:
+    w.Write([]byte{1, 2, 3})
+}
+```
+
+> NOTE: In the above example, `Writer` is referring to the embedded `io.Writer` interface. It is also possible to invoke the `Write` method by accessing this property with `w.Writer.Write()`.
+
+We are no longer triggering a panic and can now use the `NullWriter` as a `Writer`. This initialisation process is not much different from having properties that are initialised as `nil`, as discussed previously. Therefore, logically, we should try to handle them in a similar way. However, this is where embedded interfaces become a little difficult to work with. In a previous section, it was explained that the best way to handle potential `nil` values is to make the property in question private and create a public *getter* method. This way, we could ensure that our property is, in fact, not `nil`. Unfortunately, this is simply not possible with embedded interfaces, as they are by nature always public.
+
+Another concern raised by using embedded interfaces is the potential confusion caused by partially overwritten interface methods: 
+
+```go
+type MyReadCloser struct {
+  io.ReadCloser
+}
+
+func (closer *ReadCloser) Read(data []byte) { ... }
+
+func main() {
+  closer := MyReadCloser{}
+  
+  closer.Read([]byte{1, 2, 3}) 	// works fine
+  closer.Close() 		// causes panic
+  closer.ReadCloser.Closer() 		// no panic 
+}
+```
+
+Even though this might look like we're overriding methods, which is common in languages such as C# and Java, we actually aren't. Go doesn't support inheritance (and thus has no notion of a superclass). We can imitate the behaviour, but it is not a built-in part of the language. By using methods such as interface embedding without caution, we can create confusing and potentially buggy code, just to save a few more lines.
+
+> NOTE: Some argue that using embedded interfaces is a good way of creating a mock structure for testing a subset of interface methods. Essentially, by using an embedded interface, you won't have to implement all of the methods of the interface; rather, you can choose to implement only the few methods that you'd like to test. Within the context of testing/mocking, I can see this argument, but I am still not a fan of this approach.
+
+Let's quickly get back to clean code and proper usage of interfaces. It's time to discuss using interfaces as function parameters and return values. The most common proverb for interface usage with functions in Go is the following:
 
 > <em>Be conservative in what you do; be liberal in what you accept from others &ndash; Jon Postel</em>
 
