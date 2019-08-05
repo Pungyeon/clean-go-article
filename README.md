@@ -272,15 +272,18 @@ func GetItem(extension string) (Item, error) {
         return EmptyItem, errors.New("reference not found in cache")
     }
 
-    if ref, ok := refIface.(string); ok {
+    ref, ok := refIface.(string)
+    if !ok {
         // return cast error on reference 
     }
 
-    if itemIface, ok := db.ItemCache.Get(ref); ok {
+    itemIface, ok := db.ItemCache.Get(ref)
+    if !ok {
         // return no item found in cache by reference
     }
 
-    if item, ok := itemIface.(Item); ok {
+    item, ok := itemIface.(Item)
+    if !ok {
         // return cast error on item interface
     }
 
