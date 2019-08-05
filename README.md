@@ -296,7 +296,8 @@ Once we're done with our first attempt at refactoring the function, we can proce
 
 ```go
 func GetItem(extension string) (Item, error) {
-    if ref, ok := getReference(extension) {
+    ref, ok := getReference(extension)
+    if !ok {
         return EmptyItem, ErrReferenceNotFound
     }
     return getItemByReference(ref)
@@ -748,7 +749,7 @@ type ErrorDetails interface {
 
 type errDetails struct {
     errtype error
-    details string
+    details interface{}
 }
 
 func NewErrorDetails(err error, details ...interface{}) ErrorDetails {
