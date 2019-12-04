@@ -1330,7 +1330,7 @@ func (hashmap *HashMap) Insert(key string, value interface{}) {
     hashmap.store[key] = value
 }
 
-func (hashmap *HashMap) Get(id string) (interface{}, error) {
+func (hashmap *HashMap) Get(key string) (interface{}, error) {
     value, ok := hashmap.store[key]
     if !ok {
         return nil, ErrKeyNotFoundInHashMap
