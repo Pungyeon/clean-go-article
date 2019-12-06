@@ -780,7 +780,9 @@ func (store *Store) GetItem(id string) (Item, error) {
 
     item, ok := store.items[id]
     if !ok {
-        return NullItem, fmt.Errorf("Could not find item with ID: %s", id)
+        return NullItem, NewErrorDetails(
+            ErrItemNotFound,
+            fmt.Sprintf("could not find item with id: %s", id))
     }
     return item, nil
 }
@@ -847,7 +849,7 @@ type App struct {
 
 func (app *App) Cache() *KVCache {
 	if app.cache == nil {
-    app.cache = NewKVCache()
+        app.cache = NewKVCache()
 	}
 	return app.cache
 }
