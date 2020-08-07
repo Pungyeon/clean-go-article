@@ -794,7 +794,7 @@ And our HTTP handler function can then be refactored to check for a specific err
 func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := clean.GetItem("123")
     if err != nil {
-        if err.Type() == clean.ErrItemNotFound {
+        if errors.Is(err.Type(), clean.ErrItemNotFound) {
             http.Error(w, err.Error(), http.StatusNotFound)
 	        return
         }
