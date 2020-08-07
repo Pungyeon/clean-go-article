@@ -698,7 +698,7 @@ By simply representing the error as a variable (`ErrItemNotFound`), we've ensure
 func GetItemHandler(w http.ReponseWriter, r http.Request) {
     item, err := clean.GetItem("123")
     if err != nil {
-        if err == clean.ErrItemNotFound {
+        if errors.Is(err, clean.ErrItemNotFound) {
            http.Error(w, err.Error(), http.StatusNotFound)
 	        return
         }
