@@ -496,7 +496,7 @@ On a side note, if the `// do something else` part is another attempt to mutate 
 
 ```go
 func getVal(num int) (string, error) {
-    val, err := getStringResult(32)
+    val, err := getStringResult(num)
     if err != nil {
         return "", err
     }
