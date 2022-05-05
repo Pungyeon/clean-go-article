@@ -30,6 +30,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
     * [Return Values](#Return-Values) 
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
+    * [Nil Values](#Nil-Values)
     * [Pointers in Go](#Pointers-in-Go)
     * [Closures Are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
