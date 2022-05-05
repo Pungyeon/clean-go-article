@@ -31,7 +31,7 @@ I'd like to take a few sentences to clarify my stance on `gofmt` because there a
       * [Returning Defined Errors](#Returning-Defined-Errors)
       * [Returning Dynamic Errors](#Returning-Dynamic-Errors)
     * [Pointers in Go](#Pointers-in-Go)
-      * [Pointer Mutability](Pointer-Mutability)
+      * [Pointer Mutability](#Pointer-Mutability)
     * [Closures Are Function Pointers](#Closures-are-Function-Pointers)
     * [Interfaces in Go](#Interfaces-in-Go)
     * [The Empty `interface{}`](#The-Empty-Interface)
