@@ -80,7 +80,7 @@ This is what I like to call a <strong>tutorial comment</strong>; it's fairly com
 Following this logic, we can now change our comment to explain <em>why</em> we are iterating from the range 0 to 9:
 
 ```go
-// instatiate 10 threads to handle upcoming work load
+// instantiate 10 threads to handle upcoming workload
 for i := 0; i < 10; i++ {
   doSomething(i)
 }
@@ -727,7 +727,7 @@ var NullItem = Item{
 > NOTE: Every interface property in Go has a default value of `nil`. This means that this is useful for any struct that has an interface property. This is also true for structs that contain channels, maps, and slices, which could potentially also have a `nil` value.
 
 #### Returning Dynamic Errors
-There are certainly some scenarios where returning an error variable might not actually be viable. In cases where the information in customised errors is dynamic, if we want to describe error events more specifically, we can no longer define and return our static errors. Here's an example:
+There are certainly some scenarios where returning an error variable might not actually be viable. In cases where the information in custom errors is dynamic, if we want to describe error events more specifically, we can no longer define and return our static errors. Here's an example:
 
 ```go
 func (store *Store) GetItem(id string) (Item, error) {
@@ -915,7 +915,7 @@ func insertUser(w http.ResponseWriter, user User) error {
 
 Once again, at first glance, everything looks fine. We parse the user from the received request and insert the user struct into our store. Once we have successfully inserted our user into the store, we then set the password to be an empty string before returning the user as a JSON object to our client. This is all quite common practice, typically when returning a user object whose password has been hashed, since we don't want to return the hashed password.
 
-However, imagine that we are using an in-memory store based on a `map`. This code will produce some unexpected results. If we check our user store, we'll see that the change we made to the users password in the HTTP handler function also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest` is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
+However, imagine that we are using an in-memory store based on a `map`. This code will produce some unexpected results. If we check our user store, we'll see that the change we made to the user's password in the HTTP handler function also affected the object in our store. This is because the pointer address returned by `parseUserFromRequest` is what we populated our store with, rather than an actual value. Therefore, when making changes to the dereferenced password value, we end up changing the value of the object we are pointing to in our store.
 
 This is a great example of why both mutability and variable scope can cause some serious issues and bugs when used incorrectly. When passing pointers as an input parameter of a function, we are expanding the scope of the variable whose data is being pointed to. Even more worrying is the fact that we are expanding the scope to an undefined level. We are *almost* expanding the scope of the variable to the global level. As demonstrated by the above example, this can lead to disastrous bugs that are particularly difficult to find and eradicate.
 
@@ -967,7 +967,7 @@ Consider the following function signature:
 func something(closure func(float64) float64) float64 { ... }
 ```
 
-Here, `something` takes another function (a closure) as input and returns a `float64`. The input function takes a `float64` as input and also returns a `float64`. This pattern can be particularly useful for creating a loosely coupled architecture, making it easier to to add functionality without affecting other parts of the code. Suppose we have a struct containing data that we want to manipulate in some form. Through this structure's `Do()` method, we can perform operations on that data. If we know the operation ahead of time, we can obviously handle that logic directly in our `Do()` method:
+Here, `something` takes another function (a closure) as input and returns a `float64`. The input function takes a `float64` as input and also returns a `float64`. This pattern can be particularly useful for creating a loosely coupled architecture, making it easier to add functionality without affecting other parts of the code. Suppose we have a struct containing data that we want to manipulate in some form. Through this structure's `Do()` method, we can perform operations on that data. If we know the operation ahead of time, we can obviously handle that logic directly in our `Do()` method:
 
 ```go
 func (datastore *Datastore) Do(operation Operation, data []byte) error {
