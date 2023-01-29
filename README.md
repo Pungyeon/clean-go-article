@@ -311,7 +311,7 @@ func getReference(extension string) (string, bool) {
     if !ok {
         return EmptyItem, false
     }
-    return refIface.(string)
+    return refIface.(string), true
 }
 
 func getItemByReference(reference string) (Item, error) {
