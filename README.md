@@ -503,6 +503,7 @@ func getVal(num int) (string, error) {
     if val == "" {
         return NewValue() // pretend function
     }
+    return val, err
 }
 
 func main() {
