@@ -311,7 +311,7 @@ func getReference(extension string) (string, bool) {
     if !ok {
         return EmptyItem, false
     }
-    return refIface.(string)
+    return refIface.(string), true
 }
 
 func getItemByReference(reference string) (Item, error) {
@@ -503,6 +503,7 @@ func getVal(num int) (string, error) {
     if val == "" {
         return NewValue() // pretend function
     }
+    return val, err
 }
 
 func main() {
@@ -813,27 +814,27 @@ There are other scenarios in which it is common to find `nil` values that can ca
 
 ```go
 type App struct {
-	Cache *KVCache
+   Cache *KVCache
 }
 
 type KVCache struct {
   mtx sync.RWMutex
-	store map[string]string
+  store map[string]string
 }
 
 func (cache *KVCache) Add(key, value string) {
   cache.mtx.Lock()
   defer cache.mtx.Unlock()
   
-	cache.store[key] = value
+  cache.store[key] = value
 }
 ```
 
 This code is absolutely fine. However, the danger is that our `App` can be initialised incorrectly, without initialising the `Cache` property within. Should the following code be invoked, our application will panic:
 
 ```go
-	app := App{}
-	app.Cache.Add("panic", "now")
+app := App{}
+app.Cache.Add("panic", "now")
 ```
 
 The `Cache` property has never been initialised and is therefore a `nil` pointer. Thus, invoking the `Add` method like we did here will cause a panic, with the following message:
@@ -844,14 +845,14 @@ Instead, we can turn the `Cache` property of our `App` structure into a private 
 
 ```go
 type App struct {
-    cache *KVCache
+   cache *KVCache
 }
 
 func (app *App) Cache() *KVCache {
-	if app.cache == nil {
-        app.cache = NewKVCache()
-	}
-	return app.cache
+  if app.cache == nil {
+      app.cache = NewKVCache()
+   }
+   return app.cache
 }
 ```
 
